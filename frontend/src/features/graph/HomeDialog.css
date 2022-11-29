@@ -1,0 +1,13 @@
+#homeDialog .close {
+  position: absolute;
+  right: 5px;
+  top: 5px;
+}
+
+#homeDialog p {
+  margin: 0 0 15px;
+}
+
+#homeDialog svg {
+  margin-right: 6px;
+}

@@ -1,0 +1,10 @@
+## Dir
+
+/node_modules
+/dist
+.vscode
+db
+
+## Files
+
+.env

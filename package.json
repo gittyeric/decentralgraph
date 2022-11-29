@@ -1,0 +1,10 @@
+{
+  "name": "decentralgraph",
+  "version": "1.0.0",
+  "description": "Mono",
+  "main": "index.js",
+  "author": "Eric Hernandez",
+  "devDependencies": {
+    "typescript": "^4.7.4"
+  }
+}

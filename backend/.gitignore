@@ -1,0 +1,13 @@
+## Dir
+
+/node_modules
+/dist
+.vscode
+.secrets
+db
+coverage
+testdb
+
+## Files
+
+.env
