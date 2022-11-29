@@ -1,6 +1,6 @@
 {
   "name": "decentralgraph",
-  "description: "Decentralgraph frontend app",
+  "description": "Decentralgraph frontend app",
   "version": "0.1.0",
   "homepage": "https://decentralgraph.com",
   "dependencies": {
