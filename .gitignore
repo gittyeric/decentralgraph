@@ -2,3 +2,8 @@ backend/scripts
 .DS_STORE
 **/.DS_STORE
 
+backend/dist\n
+frontend/build\n
+node_modules\n
+frontend/node_modules\n
+backend/node_modules\n
