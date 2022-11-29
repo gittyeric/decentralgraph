@@ -1,7 +1,8 @@
 # backend/
 
-This is the monorepo for all 3 Typescript backend services.
+This is the monorepo for all (up to) 4 backend services.
 
+![services](components.png)
 
 ## Service 0: (Slightly custom) Erigon Full Node Client
 
@@ -21,7 +22,7 @@ The Bridge service is a simple service that does nothing more than implement the
 
 ## Service 3: Edge
 
-The Edge service lives in the Cloud as the first-line caching layer and auto scales to accommodate spikes in web traffic.  Like the Bridge, it implements a GraphFetcher API implementation but works by simply forwarding to Bridge on cache misses.  Edges and Bridges can be composed in an arbitrary mesh if you really wanted to be cool.
+The Edge service lives in the Cloud as the first-line caching layer and auto scales to accommodate spikes in web traffic.  Like the Bridge, it implements a GraphFetcher API implementation but works by simply forwarding to Bridge on cache misses.  Edges and Bridges can be composed in an arbitrary mesh if you really wanted to be cool, or ignored entirely.
 
 
 ## Doc TODOs
