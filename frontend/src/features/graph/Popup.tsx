@@ -17,7 +17,7 @@ import LoadingGif from '../../../src/assets/loading_blue.gif';
 import { AppDispatch } from '../../app/store';
 import { isWhale } from './global/biz-types';
 import { Address, ADDRESS_TYPE, Block, GraphNodes, isAddressId, isBlockId, isFullAddress, isFullBlock, isFullTransaction, isTransaction, isTransactionId, newHexValuedId, parseBlockNumber, parseHexId, Relations, Transaction } from './global/types';
-import { assertUnreachable, makeupName, radix252ToDecimal, radix252ToHex, radix252ToHumanDate, weiToEth } from './global/utils';
+import { assertUnreachable, makeupName, radix252ToDecimal, radix252ToHex, radix252ToHumanDate, wei252ToBigInt, weiToEth } from './global/utils';
 import { AQueried, GraphState, LoadNodeSpec, staticState, TimelineCursor } from './graph-reducer';
 import { RenderedNode } from './rendering';
 import { Timeline } from './Timeline';
@@ -168,7 +168,7 @@ function AddressPopup(
           </TableRow>
           <TableRow>
             <TableCell key={`addr-eth`}>ETH Balance</TableCell>
-            <TableCell><LinkedCopyCell text={weiToEth(radix252ToDecimal(node.eth))} /></TableCell>
+            <TableCell><LinkedCopyCell text={weiToEth(wei252ToBigInt(node.eth))} /></TableCell>
           </TableRow>
           <TableRow>
             <TableCell key={`addr-eth`}>WEI Balance</TableCell>

@@ -100,7 +100,7 @@ export function radix252ToDecimal(radix252: string): string {
   return newPowerRadix(radix252, baseNums, 10)
 }
 
-export function froRadix252(rad252: string): bigint {
+export function fromRadix252(rad252: string): bigint {
   return BigInt(newPowerRadix(rad252, baseNums, 10))
 }
 
@@ -113,8 +113,6 @@ export function hexToNumber(hex: HexString): number {
   const trimmedHex = hex.startsWith('0x') ? hex.substring(2) : hex
   return Number.parseInt(trimmedHex.toLowerCase(), 16)
 }
-
-export const ethAddressToRadix252 = hexToRadix252
 
 export function radix252ToHex(rad252: string): HexString {
   return newPowerRadix(rad252, baseNums, lowerHex)
@@ -345,25 +343,21 @@ export function makeupName(id: GraphNode['id']): string {
   return caps.join(' ')
 }
 
-export const weiToEth = function (number: string | bigint): string {
+export const weiToEth = function (number: bigint): string {
   return ethUnit.fromWei(number.toString(), 'ether').toString(10)
 }
 
-export const weiToEth252 = function (number: string | bigint): string {
+export const weiToEth252 = function (number: bigint): string {
   const weiToE = weiToEth(number)
   return decimalToRadix252(weiToE)
 }
 
-export const ethToWei = function (number: number | string): string {
-  return ethUnit.toWei(number, 'ether').toString(10)
+export const ethToWei = function (number: number | string): bigint {
+  return BigInt(ethUnit.toWei(number, 'ether').toString(10))
 }
 
-export const eth252ToWei = function (number: string): string {
-  return ethToWei(radix252ToDecimal(number))
-}
-
-export const eth252ToRoughEth = function (number: string): number {
-  return Number.parseFloat(radix252ToDecimal(number))
+export const wei252ToBigInt = function (number: string): bigint {
+  return BigInt(radix252ToDecimal(number))
 }
 
 export function assertUnreachable(x: never): never {

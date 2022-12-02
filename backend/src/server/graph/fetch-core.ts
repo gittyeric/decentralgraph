@@ -18,8 +18,7 @@ import {
   TRANSACTION_TYPE, Tx, TX
 } from '../../../../frontend/src/features/graph/global/types'
 import {
-  decimalToRadix252,
-  ethAddressToRadix252, hexToRadix252, instrumentDebug, toRadix252
+  decimalToRadix252, hexToRadix252, instrumentDebug, toRadix252
 } from '../../../../frontend/src/features/graph/global/utils'
 import { CHAIN_STATE_KEY } from './state/core-init'
 
@@ -82,7 +81,7 @@ export async function fetchTransactionRels(
   // Otherwise this was a contract creation, load the receipt to find the contract recipient
   else {
     const receipt = await provider.getTransactionReceipt(transaction.hash!)
-    const contractId = nodeId(ADDRESS_TYPE, ethAddressToRadix252(receipt.contractAddress!))
+    const contractId = nodeId(ADDRESS_TYPE, hexToRadix252(receipt.contractAddress!))
     const rx: Rx = {
       id: relationId(RX, transactionId, contractId),
       ts: ts252,

@@ -11,7 +11,7 @@ import { useAppSelector } from '../../app/hooks';
 import { AppDispatch } from '../../app/store';
 import { Toast } from '../dashboard/Toast';
 import { Address, getGraphType, GraphNodes, isAddress, isBlock, isFullTransaction, isTransaction, parseBlockNumber, RX, TX } from './global/types';
-import { assertUnreachable, densure, instrumentDebug, makeupName, radix252ToDecimal, weiToEth } from './global/utils';
+import { assertUnreachable, densure, wei252ToBigInt, instrumentDebug, makeupName, radix252ToDecimal, weiToEth } from './global/utils';
 import { ANodeSelected, AQueried, AUrlQueryUpdated, LoadLatestBlockSpec, LoadNodeSpec, staticState } from './graph-reducer';
 import { Popup } from './Popup';
 import { BLOCK_NODE_DISTANCE, createThreeObj, getLinkColor, getLinkWidth, isRenderedLink, LinkView, RenderedLinkView, RenderedNode, TIME_TILL_FREEZE, toGraphViewNodes, unfreezeAll } from './rendering';
@@ -141,7 +141,7 @@ const nodeToLabel = (node: NodeObject | GraphNodes): string => {
   else if (isBlock(asRendered)) {
     return `Block ${parseBlockNumber(asRendered.id)}`
   } else if (isTransaction(asRendered)) {
-    let txName = isFullTransaction(asRendered) ? `${weiToEth(radix252ToDecimal(asRendered.eth)).substring(0, 10)} ETH\r\n` : ''
+    let txName = isFullTransaction(asRendered) ? `${weiToEth(wei252ToBigInt(asRendered.eth)).substring(0, 10)} ETH\r\n` : ''
     // Transactions mostly make sense in terms as a relation, find a send or receive and name based on that
     const rels = staticState.peekNodeRelations(asRendered.id) || []
     for (const rel of rels) {

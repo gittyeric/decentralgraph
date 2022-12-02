@@ -1,6 +1,6 @@
 import stringHash from "string-hash";
 import { Address, AddressRelations, Block, BlockRelations, EChainState, FullAddress, FullBlock, FullTransaction, GraphNodes, isPaginatedNodeId, PaginatedNode, Relations, Transaction, TransactionRelations } from './types';
-import { froRadix252, toRadix252 } from './utils';
+import { fromRadix252, toRadix252 } from './utils';
 
 // Need to start fetching fresh results from here
 export const MAX_ADDRESS_AGE_TILL_STALE = 1000 * 60 * 60 * 32;
@@ -45,8 +45,8 @@ export function parseCursor(cursor: GraphCursor): ParsedCursor {
     const split = cursor.split(';')
     return {
         id: split[0] as PaginatedNode['id'],
-        timeMs: Number(froRadix252(split[1])) * 1000,
-        hash: Number(froRadix252(split[2])),
+        timeMs: Number(fromRadix252(split[1])) * 1000,
+        hash: Number(fromRadix252(split[2])),
     }
 }
 

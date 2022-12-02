@@ -1,11 +1,11 @@
 import * as THREE from 'three'
 import {
   Address,
-  Block, CHILD_TRANSACTION, FullAddress, FullTransaction, getGraphType, getObjId, getSourceDestFromRel, GraphNodes, isAddressId, isBlock, isBlockId,
+  Block, CHILD_TRANSACTION, FullAddress, getGraphType, getObjId, getSourceDestFromRel, GraphNodes, isAddress, isAddressId, isBlock, isBlockId,
   isFullAddress,
   isFullBlock,
   isFullNode,
-  isFullTransaction, isTransaction, isTransactionId, MINER, parseBlockNumber, Relations
+  isFullTransaction, isTransaction, isTransactionId, MINER, parseBlockNumber, Relations, TRANSACTION_TYPE
 } from './global/types'
 
 import { SpriteMaterial } from 'three'
@@ -22,12 +22,12 @@ import ethImg from '../../assets/ethereum.png'
 import minerImg from '../../assets/miner.png'
 import whaleImg from '../../assets/whale.png'
 import { isContract, isWhale } from './global/biz-types'
+import { RELATION_PAGE_SIZE } from './global/tuning'
 import {
-  assertUnreachable, eth252ToRoughEth, instrumentDebug, radix252ToDecimal
+  assertUnreachable, densure, instrumentDebug, radix252ToDecimal, wei252ToBigInt, weiToEth
 } from './global/utils'
 import { Point3d } from './Graph'
 import { GraphState, staticState } from './graph-reducer'
-import { RELATION_PAGE_SIZE } from './global/tuning'
 
 export const TIME_TILL_FREEZE = 3000
 const ethImgs = [ethImg, eth1Img, eth2Img, eth3Img, eth4Img]
@@ -446,10 +446,6 @@ export function getLinkWidth(link: RenderedLinkView) {
   return link.r
 }
 
-const MIN_AVG_ETH_FOR_SCALE = 0.001
-const MAX_AVG_ETH_FOR_SCALE = 500.0
-const MAX_PHYSICAL_SCALAR = 8
-
 const BLOCK_X_LEN = 23
 const BLOCK_Y_LEN = 4
 const BLOCK_Z_LEN = 14
@@ -550,14 +546,10 @@ export function createThreeObj(node: RenderedNode): THREE.Object3D {
   return staticState.peekThreeObjOrSet(node.id, () => createThreeObjFresh(node))
 }
 
-function getScaleByEth(node: FullAddress | FullTransaction): number {
-  const avgNodesEth = Math.min(
-    Math.max(MIN_AVG_ETH_FOR_SCALE, staticState.nodeBalanceSum() / staticState.nodeCount()),
-    MAX_AVG_ETH_FOR_SCALE
-  )
-  const ceiling = avgNodesEth * 2
-  return Math.min(1.0, eth252ToRoughEth(node.eth) / ceiling) * MAX_PHYSICAL_SCALAR
-}
+//const MIN_AVG_ETH_FOR_SCALE = 0.001
+//const MAX_AVG_ETH_FOR_SCALE = 500.0
+const MAX_PHYSICAL_SCALAR = 8
+const DEFAULT_SCALAR = MAX_PHYSICAL_SCALAR / 3.0
 
 function generateSphere(scalar: number, color: string, opacity: number) {
   const sphere = new THREE.SphereGeometry(2.5 * scalar)
@@ -569,13 +561,57 @@ function generateSphere(scalar: number, color: string, opacity: number) {
   return new THREE.Mesh(sphere, skin)
 }
 
+function calculateScale(rNode: RenderedNode): number {
+  const node = rNode as GraphNodes
+  // Address scale is relative to global avg eth
+  if (isFullNode(node)) {
+    if (isFullTransaction(node) || isFullAddress(node)) {
+      const MIN_ETH_FOR_SCALE = 0.5
+      const MAX_ETH_FOR_SCALE = 10
+
+      const predicate = isFullAddress(node) ? isFullAddress : isFullTransaction
+      const nodes = staticState.peekRenderedNodes().filter((rn) => predicate(rn)) as (RenderedNode & { eth: string })[]
+      const ethSum = nodes.reduce((sum, n) =>
+        sum + Math.min(MIN_ETH_FOR_SCALE, Math.max(+weiToEth(wei252ToBigInt(n.eth)), MAX_ETH_FOR_SCALE)),
+        0)
+
+      const avgEth = Number(ethSum) / nodes.length
+      const nodeEth = +weiToEth(wei252ToBigInt(node.eth))
+      return Math.max(1, Math.min(MAX_PHYSICAL_SCALAR, nodeEth / avgEth))
+    }
+    else if (isFullBlock(node)) {
+      // Peek at immediate transactions and sum eth amounts
+      const links = staticState.peekNodeRelations(node.id) || []
+      let transCount = 0
+
+      for (const link of links) {
+        if (link.id.startsWith(TRANSACTION_TYPE)) {
+          transCount++
+        }
+      }
+
+      // Scale the block size up to max of X transactions
+      const MAX_TRANS_COUNT_BOOST = 50
+      const blockSize = Math.min(MAX_TRANS_COUNT_BOOST, transCount)
+      const rawScalar = blockSize / MAX_TRANS_COUNT_BOOST
+
+      // Scale from 1x up to half of MAX_PHYSICAL_SCALAR
+      return Math.max(1 / MAX_PHYSICAL_SCALAR, Math.min(rawScalar, 0.5)) * MAX_PHYSICAL_SCALAR
+    }
+  }
+  else {
+    if (isTransaction(node) || isAddress(node) || isBlock(node)) {
+      return DEFAULT_SCALAR
+    }
+  }
+
+  assertUnreachable(node)
+}
+
 function create3dNode(node: RenderedNode): THREE.Object3D {
   console.log('hash ' + JSON.stringify('create ' + node.id, null, 2));
-  // TODOOOOOOOO
-  const scalar =
-    isFullAddress(node) || isFullTransaction(node)
-      ? getScaleByEth(node)
-      : 1 + (MAX_PHYSICAL_SCALAR - 1) / 2.0
+  const scalar = calculateScale(node)
+  densure("Scalar too small?", scalar >= 1)
   // Base case, node is not yet loaded, display partially
   if (!node || !isFullNode(node)) {
     console.log('hash not full node ' + node.id)

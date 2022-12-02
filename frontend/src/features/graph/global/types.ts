@@ -1,6 +1,6 @@
 import {
   assertUnreachable,
-  ethAddressToRadix252, froRadix252, radix252ToHex,
+  fromRadix252, hexToRadix252, radix252ToHex,
   toRadix252
 } from './utils'
 
@@ -370,7 +370,7 @@ export type HexIdNodes = Address | Transaction
 
 export function parseBlockNumber(id: Block['id']): number {
   const blockIdStr = getObjId(id)
-  return Number(froRadix252(blockIdStr))
+  return Number(fromRadix252(blockIdStr))
 }
 
 // The 0x-prefix eth address from an Address id or transaction hash
@@ -398,7 +398,7 @@ export function newHexValuedId<NT extends NodeToType<HexIdNodes>>(
   hex: string,
   nodeType: NT
 ): TypeToNode[NT]['id'] {
-  return nodeId(nodeType, ethAddressToRadix252(hex)) as TypeToNode[NT]['id']
+  return nodeId(nodeType, hexToRadix252(hex)) as TypeToNode[NT]['id']
 }
 
 export function newNumberValuedId<N extends Block>(
@@ -406,4 +406,18 @@ export function newNumberValuedId<N extends Block>(
   nodeType: NodeToType<N>
 ) {
   return nodeId(nodeType, toRadix252(blockNumber))
+}
+
+export function relationToWei(rel: Relations): bigint {
+  if (isTx(rel) || isContractCreated(rel)) {
+    return -fromRadix252(rel.val)
+  } else if (isRx(rel)) {
+    return fromRadix252(rel.val)
+  } else if (isParentBlock(rel) || isChildTransaction(rel)) {
+    return BigInt(0)
+  } else if (isMiner(rel)) {
+    // TODO: Make mined wei accurate!!!
+    return rel.val ? fromRadix252(rel.val!) : BigInt('3000000000000000000')
+  }
+  assertUnreachable(rel)
 }

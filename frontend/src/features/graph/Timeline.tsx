@@ -9,8 +9,8 @@ import {
 } from 'recharts';
 import { AppDispatch } from "../../app/store";
 import { GraphCursor } from './global/fetch-contract';
-import { GraphNodes, isChildTransaction, isContractCreated, isMiner, isParentBlock, isRx, isTx, PaginatedNode, Relations } from "./global/types";
-import { assertUnreachable, froRadix252, weiToEth } from "./global/utils";
+import { GraphNodes, isChildTransaction, isContractCreated, isMiner, isParentBlock, isRx, isTx, PaginatedNode, Relations, relationToWei } from "./global/types";
+import { assertUnreachable, fromRadix252, weiToEth } from "./global/utils";
 import { AQueried, LoadTimelineMarkSpec, TimelineCursor } from "./graph-reducer";
 
 // Returns selected node's past and future's closest GraphCursors to date or
@@ -141,20 +141,6 @@ function timelineClicked(
   dispatch(query)
 }
 
-function relationToWei(rel: Relations): bigint {
-  if (isTx(rel) || isContractCreated(rel)) {
-    return -froRadix252(rel.val)
-  } else if (isRx(rel)) {
-    return froRadix252(rel.val)
-  } else if (isParentBlock(rel) || isChildTransaction(rel)) {
-    return BigInt(0)
-  } else if (isMiner(rel)) {
-    // TODO: Make mined wei accurate!!!
-    return rel.val ? froRadix252(rel.val!) : BigInt('3000000000000000000')
-  }
-  assertUnreachable(rel)
-}
-
 export function Timeline(props: {
   dispatch: ReturnType<typeof useDispatch<AppDispatch>>,
   selectedNode: GraphNodes,
@@ -174,8 +160,8 @@ export function Timeline(props: {
     return {
       id: tr.id,
       eth,
-      ts: Number(froRadix252(tr.ts)),
-      name: histogramDate(Number(froRadix252(tr.ts)) * 1000)
+      ts: Number(fromRadix252(tr.ts)),
+      name: histogramDate(Number(fromRadix252(tr.ts)) * 1000)
     }
   })
   const histogram = <Histogram

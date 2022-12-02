@@ -13,8 +13,8 @@ import {
 } from './global/types'
 import {
   ensure,
-  eth252ToRoughEth,
-  froRadix252,
+  wei252ToBigInt,
+  fromRadix252,
   instrumentDebug,
 } from './global/utils'
 import {
@@ -47,7 +47,7 @@ export const debugMode = true
 const debug = instrumentDebug('graph-reducer')
 
 // Track total balance of all visibleNodes
-let nodeBalanceSum = 0
+let addrBalanceSum = BigInt(0)
 
 // Dangerous static state!
 export type VisibleNode = [
@@ -143,7 +143,7 @@ export const staticState = {
   peekNodeRelations,
   peekThreeObjOrSet,
   nodeCount: () => visibleNodes.size,
-  nodeBalanceSum: () => nodeBalanceSum,
+  addrBalanceSum: () => addrBalanceSum,
 }
 
 /*function _removeNodeLinks(nodeId: GraphNodes['id'], relIdsToDelete: Set<Relations['id']>): void {
@@ -323,12 +323,12 @@ function addNodesToVisible(
   for (const node of added) {
     // Update total visible node balance
     if (isFullAddress(node)) {
-      nodeBalanceSum += eth252ToRoughEth(node.eth)
+      addrBalanceSum += wei252ToBigInt(node.eth)
     }
   }
   for (const e of evicted) {
     if (isFullAddress(e[0])) {
-      nodeBalanceSum -= eth252ToRoughEth(e[0].eth)
+      addrBalanceSum -= wei252ToBigInt(e[0].eth)
     }
   }
 
@@ -929,14 +929,14 @@ routes['SetMaxNodes'] = (s: GraphState, a: ASetMaxNodes) => {
       max: a.maxNodes,
     })
 
-    nodeBalanceSum = 0
+    addrBalanceSum = BigInt(0)
     while (visibleNodes.size > a.maxNodes) {
       visibleNodes.pop()
     }
     visibleNodes.forEach((vn) => {
       newVisibleNodes.set(vn[0].id, vn)
       if (isFullAddress(vn[0])) {
-        nodeBalanceSum += eth252ToRoughEth(vn[0].eth)
+        addrBalanceSum += wei252ToBigInt(vn[0].eth)
       }
     })
 
@@ -1070,7 +1070,7 @@ routes['SelectedRelsPageLoaded'] = (s: GraphState, a: ASelectedRelsPageLoaded) =
     const relsLoadedState = routes['RelsLoad'](nodeLoadState, { type: 'RelsLoad', rels: a.visibleRels })
     return {
       ...relsLoadedState,
-      timelineMark: Number(froRadix252(a.timelineRels[0].ts)),
+      timelineMark: Number(fromRadix252(a.timelineRels[0].ts)),
       timelineRels: a.timelineRels
     }
   }

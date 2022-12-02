@@ -19,7 +19,7 @@ import {
   Relations,
   Transaction
 } from './global/types'
-import { assertUnreachable, froRadix252, instrumentDebug, raceAndRelease } from './global/utils'
+import { assertUnreachable, fromRadix252, instrumentDebug, raceAndRelease } from './global/utils'
 
 const debug = instrumentDebug('graph-algos')
 
@@ -66,7 +66,7 @@ export function findTopNRelationsNearestTo(nearMs: number, nClosestCount: number
   let closestIndexToNear = 0
   let closestDistance = Number.POSITIVE_INFINITY
   for (let i = 0; i < timeSortedRels.length; i++) {
-    const relTs = Number(froRadix252(timeSortedRels[i].ts))
+    const relTs = Number(fromRadix252(timeSortedRels[i].ts))
     const dist = Math.abs(relTs - nearMs)
     if (dist < closestDistance) {
       closestIndexToNear = i

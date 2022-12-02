@@ -335,7 +335,6 @@ function* newGraphSaga(remoteFetcher: GraphFetcher, localFetcher: GraphFetcher) 
     maxVisibleNodes: number,
     maxDepth: number
   ): ActionGen {
-    const allAddedNodes: Record<GraphNodes['id'], GraphNodes> = {}
     const buffer = actionBuffer(YIELD_BUFFER_SIZE, TIME_TILL_FREEZE + 1)
     const gbfsGen = greedyBFS(nodeIds, maxVisibleNodes, maxDepth, localFetcher)
     const yieldedNodes = new Set<GraphNodes['id']>()

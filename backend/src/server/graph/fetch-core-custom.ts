@@ -5,7 +5,7 @@ import {
   MINER, newHexValuedId, newNumberValuedId, nodeId, relationId, Rx, RX, TRANSACTION_TYPE, Tx, TX
 } from '../../../../frontend/src/features/graph/global/types'
 import {
-  assertUnreachable, ethAddressToRadix252, hexToNumber,
+  assertUnreachable, hexToNumber,
   hexToRadix252,
   instrumentDebug,
   sleep
@@ -111,7 +111,7 @@ export async function fetchCustomBlocksBatch(
       }
 
       const tid = newHexValuedId(t.hash!, TRANSACTION_TYPE)
-      const fromAddrId = nodeId(ADDRESS_TYPE, ethAddressToRadix252(t.from))
+      const fromAddrId = nodeId(ADDRESS_TYPE, hexToRadix252(t.from))
       if (!balances[t.from.toLowerCase()]) {
         Object.keys(balances).forEach((k) => {
           if (k.toString() === t.from.toString()) {
@@ -137,12 +137,12 @@ export async function fetchCustomBlocksBatch(
       const tx: Tx = {
         id: relationId(TX, fromAddrId, tid),
         ts: now,
-        val: ethAddressToRadix252(t.value),
+        val: hexToRadix252(t.value),
       }
       res.addrRels.push(tx)
       // If a "to" field set, tx was sent to an address
       if (t.t === 'w') {
-        const toAddrId = nodeId(ADDRESS_TYPE, ethAddressToRadix252(t.to))
+        const toAddrId = nodeId(ADDRESS_TYPE, hexToRadix252(t.to))
         const fullTo: FullAddress = {
           id: toAddrId,
           c: now,
@@ -154,13 +154,13 @@ export async function fetchCustomBlocksBatch(
         const rx: Rx = {
           id: relationId(RX, tid, toAddrId),
           ts: now,
-          val: ethAddressToRadix252(t.value.toString()),
+          val: hexToRadix252(t.value.toString()),
         }
         res.addrRels.push(rx)
       }
       // Otherwise this was a contract creation, load the receipt to find the contract recipient
       else if (t.t === 'c') {
-        const toAddrId = nodeId(ADDRESS_TYPE, ethAddressToRadix252(t.to))
+        const toAddrId = nodeId(ADDRESS_TYPE, hexToRadix252(t.to))
         const contract: FullAddress = {
           id: toAddrId,
           c: now,

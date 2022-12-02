@@ -3,7 +3,7 @@ export default {
     core: {
         bridgePort: 3000,
         ethWs: "http://localhost:8545",
-        lmdbEthRoot: "/eth",
+        lmdbEthRoot: "/main",
         //lmdbBtcRoot: "/btc",
         //lmdbArchiveRoot: '/huge',
     },

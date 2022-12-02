@@ -1,11 +1,11 @@
 import { FullAddress } from './types'
-import { eth252ToRoughEth } from './utils'
+import { wei252ToBigInt } from './utils'
 
-export const WHALE_ETH_CUTOFF = 100000
+export const WHALE_ETH_CUTOFF = 500
 
 export function isWhale(node: FullAddress): boolean {
-  const eth = eth252ToRoughEth(node.eth)
-  return false && eth > WHALE_ETH_CUTOFF
+  const eth = wei252ToBigInt(node.eth)
+  return eth > WHALE_ETH_CUTOFF
 }
 
 export function isContract(node: FullAddress): boolean {

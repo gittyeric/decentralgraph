@@ -26,7 +26,7 @@ import {
   Transaction,
   TransactionRelations
 } from './types'
-import { froRadix252, instrumentDebug, toRadix252 } from './utils'
+import { fromRadix252, instrumentDebug, toRadix252 } from './utils'
 
 export type CachedAddressRelation = AddressRelations[]
 
@@ -234,7 +234,7 @@ export function cachedGraphFetcher(
       }
 
       const addressStale = addressHit
-        ? new Date().getTime() - Number(froRadix252(addressHit.ts)) > MAX_ADDRESS_AGE_TILL_STALE
+        ? new Date().getTime() - Number(fromRadix252(addressHit.ts)) > MAX_ADDRESS_AGE_TILL_STALE
         : true
       if (!addressStale && addressRelsHit) {
         debug(`Addr is fresh, returning early ${addressId}`)

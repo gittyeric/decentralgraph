@@ -15,7 +15,7 @@ import {
 } from '../../../../../frontend/src/features/graph/global/types'
 import {
   assertUnreachable,
-  debug, froRadix252, sleep,
+  debug, fromRadix252, sleep,
   toRadix252
 } from '../../../../../frontend/src/features/graph/global/utils'
 
@@ -75,7 +75,7 @@ async function writeAddrRels(addrs: FullAddress[],
       const toPut = existing ?
         ({
           ...addr,
-          c: toRadix252(Math.min(Number(froRadix252(addr.ts)), Number(froRadix252(existing.ts)))),
+          c: toRadix252(Math.min(Number(fromRadix252(addr.ts)), Number(fromRadix252(existing.ts)))),
           eth: addr.eth,
           name: existing.name || addr.name,
           // Once a contract, always a contract

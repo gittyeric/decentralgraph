@@ -29,7 +29,7 @@ export const bridgeLogger = winston.createLogger({
     transports: [
         new DailyRotateFile({
             filename: 'debug.log',
-            dirname: './bridge-logs',
+            dirname: '/main/bridge-logs',
             datePattern: 'YYYY-MM-DD',
             maxSize: '20m',
             maxFiles: 30
@@ -46,7 +46,7 @@ export const coreLogger = winston.createLogger({
     transports: [
         new DailyRotateFile({
             filename: '%DATE%.log',
-            dirname: './core-logs',
+            dirname: '/main/core-logs',
             datePattern: 'YYYY-MM-DD',
             maxSize: '20m',
             maxFiles: 30

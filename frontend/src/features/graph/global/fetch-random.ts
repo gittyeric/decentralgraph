@@ -21,7 +21,7 @@ import {
   RX, Transaction, TransactionRelations, TRANSACTION_TYPE, Tx,
   TX
 } from './types'
-import { assertUnreachable, froRadix252, instrumentDebug, sleep, toRadix252 } from './utils'
+import { assertUnreachable, fromRadix252, instrumentDebug, sleep, toRadix252 } from './utils'
 
 const rand = Random.create('123')
 const MAX_RANDOM_TIMEOUT = 1
@@ -344,7 +344,7 @@ export const newRandomGraphFetcher: () => GraphFetcher = () => {
       // Make up the previous block
       const blockNumber = parseBlockNumber(block.id)
       if (blockNumber > 0) {
-        const parentId = nodeId(BLOCK_TYPE, toRadix252(Number(froRadix252(block.number)) - 1))
+        const parentId = nodeId(BLOCK_TYPE, toRadix252(Number(fromRadix252(block.number)) - 1))
         const parentBlockRelation = {
           id: relationId(PARENT_BLOCK, parentId, block.id),
         } as ParentBlock
@@ -352,7 +352,7 @@ export const newRandomGraphFetcher: () => GraphFetcher = () => {
       }
 
       // Make up the next block
-      const childId = nodeId(BLOCK_TYPE, toRadix252(Number(froRadix252(block.number)) + 1))
+      const childId = nodeId(BLOCK_TYPE, toRadix252(Number(fromRadix252(block.number)) + 1))
       const childBlockRelation = {
         id: relationId(PARENT_BLOCK, block.id, childId),
       } as ParentBlock
