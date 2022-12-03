@@ -379,28 +379,30 @@ function addRel(sourceId: GraphNodes['id'], targetId: GraphNodes['id'], rel: Lin
 }
 
 // TODO: remove
+//const throwError = (msg: string) => { throw new Error(msg) }
+const throwError = (msg: string) => { console.error(msg) }
 function azzert() {
   for (const link of visibleLinks) {
     const sourceId = getLinkSourceId(link)
     const targetId = getLinkTargetId(link)
     if (!visLinksByNode[sourceId]) {
-      throw new Error('missing source from visLinksByNode')
+      throwError('missing source from visLinksByNode')
     }
     if (!visLinksByNode[sourceId].some((vl) => vl.id === link.id)) {
-      throw new Error('Rel missing from sources visLinksByNode')
+      throwError('Rel missing from sources visLinksByNode')
     }
     if (!visLinksByNode[targetId]) {
-      throw new Error('missing target from visLinksByNode')
+      throwError('missing target from visLinksByNode')
     }
     if (!visLinksByNode[targetId].some((vl) => vl.id === link.id)) {
-      throw new Error('Rel missing from targets visLinksByNode')
+      throwError('Rel missing from targets visLinksByNode')
     }
 
     if (!visibleNodes.has(sourceId) || !visibleNodes.has(targetId)) {
-      throw new Error('rel has nodes not in visibleNodes')
+      throwError('rel has nodes not in visibleNodes')
     }
   }
-  if (visibleNodes.size > 0) {
+  /*if (visibleNodes.size > 0) {
     for (const x of visibleNodes.entries()) {
       if (!visibleLinks.some((vl) => {
         const sourceId = getLinkSourceId(vl)
@@ -410,7 +412,7 @@ function azzert() {
         //throw new Error('visibleNodes contains a node with no relations!')
       }
     }
-  }
+  }*/
 }
 
 type ActionReducer<A extends GraphActions> = (s: GraphState, a: A) => GraphState
@@ -546,7 +548,7 @@ function toLinkView(rel: Relations): LinkView {
   let ratio = 0.8
 
   return {
-    id: rel.id,
+    ...rel,
     r: ratio,
     source: srcId,
     target: targetId,
@@ -614,6 +616,7 @@ routes['NodeSelect'] = (s: GraphState, a: ANodeSelected<undefined | null | Graph
     return s
   }
   if (a.nodeId) {
+    debug(`Select ${a.nodeId}`)
     // Put selecteds' neighbors second-in-LRU-line
     const vn = visibleNodes.get(a.nodeId) as VisibleNode
     for (const r of visLinksByNode[vn[0].id]) {
@@ -1155,11 +1158,11 @@ routes['SetVrEnabled'] = (s: GraphState, a: ASetVrEnabled) => {
       const sourceId = getLinkSourceId(vl)
       const targetId = getLinkTargetId(vl)
       visibleLinks[i] = {
-        id: vl.id,
+        ...vl,
         source: sourceId,
         target: targetId,
         r: 0.5
-      }
+      } as LinkView
       addVisLinkByNode(sourceId, targetId, visibleLinks[i])
     } catch (e) {
       throw e

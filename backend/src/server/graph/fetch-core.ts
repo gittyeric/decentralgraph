@@ -1,4 +1,4 @@
-import type { Block as EthBlock, BlockWithTransactions, TransactionResponse as EthTransaction } from '@ethersproject/abstract-provider'
+import type { Block as EthBlock, BlockWithTransactions, TransactionReceipt, TransactionResponse as EthTransaction } from '@ethersproject/abstract-provider'
 import { coreLogger } from '../../util'
 import { provider } from '../eth'
 import { addrDB, addrRelsDB, chainStateDb } from '../lmdb'
@@ -53,8 +53,10 @@ export async function fetchTransactionRels(
   parentBlock?: EthBlock | BlockWithTransactions,
 ): Promise<[FullTransaction, NodeToRelations[typeof TRANSACTION_TYPE][]]> {
   const transactionId = newHexValuedId(transaction.hash!, TRANSACTION_TYPE)
+  const pendingReceipt = provider.getTransactionReceipt(transaction.hash!)
   const block = parentBlock || await provider.getBlock(transaction.blockNumber!)
-  const blockId = newNumberValuedId(block.number, BLOCK_TYPE)
+  const receipt = await pendingReceipt
+  const blockId = newNumberValuedId(BigInt(block.number), BLOCK_TYPE)
   const ts252 = decimalToRadix252(`${block.timestamp}`)
   const eth252 = hexToRadix252(transaction.value.toHexString())
   const fromAddrId = newHexValuedId(transaction.from!, ADDRESS_TYPE)
@@ -75,12 +77,11 @@ export async function fetchTransactionRels(
       val: eth252,
     }
 
-    let fullT: FullTransaction = rawToFullTransaction(transaction, null)
+    let fullT: FullTransaction = rawToFullTransaction(transaction, receipt)
     return [fullT, [childRel, rx, tx]]
   }
   // Otherwise this was a contract creation, load the receipt to find the contract recipient
   else {
-    const receipt = await provider.getTransactionReceipt(transaction.hash!)
     const contractId = nodeId(ADDRESS_TYPE, hexToRadix252(receipt.contractAddress!))
     const rx: Rx = {
       id: relationId(RX, transactionId, contractId),
@@ -98,17 +99,19 @@ export async function fetchTransactionRels(
   }
 }
 
-export const rawToFullTransaction = function (rawTransaction: EthTransaction, receipt?: { contractAddress: string } | null): FullTransaction {
+export const rawToFullTransaction = function (rawTransaction: EthTransaction, receipt: TransactionReceipt): FullTransaction {
   const transaction: FullTransaction = {
     id: newHexValuedId(rawTransaction.hash!, TRANSACTION_TYPE),
     blockNumber: toRadix252(rawTransaction.blockNumber!),
     eth: decimalToRadix252(rawTransaction.value.toString()),
     from: rawTransaction.from,
-    gasPrice: decimalToRadix252(rawTransaction.gasPrice!.toString()),
+    gasUsed: decimalToRadix252(receipt.gasUsed.toString()),
+    gasPrice: decimalToRadix252(receipt.effectiveGasPrice.toString()),
     gasLimit: decimalToRadix252(rawTransaction.gasLimit!.toString()),
     hash: hexToRadix252(rawTransaction.hash),
     //input: rawTransaction.input,
     nonce: toRadix252(rawTransaction.nonce),
+    status: receipt.status as 0 | 1,
     to: rawTransaction.to ? rawTransaction.to.toString() : receipt!.contractAddress,
     //transactionIndex: rawTransaction.transactionIndex,
     //maxFeePerGas: rawTransaction.maxFeePerGas ? rawTransaction.maxFeePerGas!.toString() : undefined,
@@ -119,7 +122,7 @@ export const rawToFullTransaction = function (rawTransaction: EthTransaction, re
 
 export const rawToFullBlock = function (rawBlock: BlockWithTransactions): FullBlock {
   const block: FullBlock = {
-    id: newNumberValuedId(rawBlock.number, BLOCK_TYPE),
+    id: newNumberValuedId(BigInt(rawBlock.number), BLOCK_TYPE),
     difficulty: rawBlock.difficulty,
     extraData: rawBlock.extraData,
     gasLimit: rawBlock.gasLimit.toString(),
@@ -297,7 +300,7 @@ export const newCoreFetcher: () => GraphFetcher = () => {
         } as NodeErr
       }
       try {
-        const rawBlock = await provider.getBlockWithTransactions(blockNumber)
+        const rawBlock = await provider.getBlockWithTransactions('0x' + blockNumber.toString(16))
         if (!rawBlock) {
           return {
             c: FETCH_ERRORS.NODE_NOT_EXISTS,
@@ -310,23 +313,23 @@ export const newCoreFetcher: () => GraphFetcher = () => {
 
         // Yield incoming parent block link
         if (blockNumber > 0) {
-          const parentId = newNumberValuedId(blockNumber - 1, BLOCK_TYPE)
+          const parentId = newNumberValuedId(blockNumber - BigInt(1), BLOCK_TYPE)
           const parentLink: ParentBlock = {
             id: relationId(PARENT_BLOCK, parentId, fullBlock.id),
             ts: ts252,
           }
-          debug(`Yield parent block ${blockNumber - 1}`)
+          debug(`Yield parent block ${blockNumber - BigInt(1)}`)
           yield [parentLink]
         }
 
         // Yield child block
         if (blockNumber < chainState.bn) {
-          const childId = newNumberValuedId(blockNumber + 1, BLOCK_TYPE)
+          const childId = newNumberValuedId(blockNumber + BigInt(1), BLOCK_TYPE)
           const childLink: ParentBlock = {
             id: relationId(PARENT_BLOCK, fullBlock.id, childId),
             ts: ts252, //TODO: this ts isn't technically correct, but meh. Maybe load the child one day?
           }
-          debug(`Yield child block ${blockNumber + 1}`)
+          debug(`Yield child block ${blockNumber + BigInt(1)}`)
           yield [childLink]
         }
 

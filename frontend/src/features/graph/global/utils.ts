@@ -109,9 +109,9 @@ export function hexToRadix252(hex: string): HexString {
   return newPowerRadix(trimmedHex.toLowerCase(), lowerHex, baseChars)
 }
 
-export function hexToNumber(hex: HexString): number {
+export function hexToNumber(hex: HexString): bigint {
   const trimmedHex = hex.startsWith('0x') ? hex.substring(2) : hex
-  return Number.parseInt(trimmedHex.toLowerCase(), 16)
+  return BigInt('0x' + trimmedHex.toLowerCase())
 }
 
 export function radix252ToHex(rad252: string): HexString {

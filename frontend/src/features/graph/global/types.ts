@@ -1,5 +1,6 @@
 import {
   assertUnreachable,
+  decimalToRadix252,
   fromRadix252, hexToRadix252, radix252ToHex,
   toRadix252
 } from './utils'
@@ -110,16 +111,25 @@ export type Transaction = GraphNode & {
 export type FullTransaction = Transaction & {
   // wei as radix252 string
   eth: string
+  // block number as radix252 string
   blockNumber: string
 
   // Mostly a serialization-friendly frontend version of Ethers.js' Transaction
   hash: string
+
+  // to address in hex form
   to: string
+  // from address in hex form
   from: string
   nonce: string
 
+  // Gas used in Radix252
+  gasUsed: string
   gasLimit: string
   gasPrice: string
+
+  // 0 or 1 for fail or success
+  status: 0 | 1,
 
   //data: string
   //chainId: number
@@ -368,9 +378,9 @@ export function isPaginatedNodeId(nodeId: string): nodeId is PaginatedNode['id']
 
 export type HexIdNodes = Address | Transaction
 
-export function parseBlockNumber(id: Block['id']): number {
+export function parseBlockNumber(id: Block['id']): bigint {
   const blockIdStr = getObjId(id)
-  return Number(fromRadix252(blockIdStr))
+  return fromRadix252(blockIdStr)
 }
 
 // The 0x-prefix eth address from an Address id or transaction hash
@@ -402,10 +412,10 @@ export function newHexValuedId<NT extends NodeToType<HexIdNodes>>(
 }
 
 export function newNumberValuedId<N extends Block>(
-  blockNumber: number,
+  blockNumber: bigint,
   nodeType: NodeToType<N>
 ) {
-  return nodeId(nodeType, toRadix252(blockNumber))
+  return nodeId(nodeType, decimalToRadix252(blockNumber.toString()))
 }
 
 export function relationToWei(rel: Relations): bigint {

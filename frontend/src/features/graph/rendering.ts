@@ -5,7 +5,7 @@ import {
   isFullAddress,
   isFullBlock,
   isFullNode,
-  isFullTransaction, isTransaction, isTransactionId, MINER, parseBlockNumber, Relations, TRANSACTION_TYPE
+  isFullTransaction, isRx, isTransaction, isTransactionId, isTx, MINER, parseBlockNumber, Relations, RX, Transaction, TRANSACTION_TYPE, TX
 } from './global/types'
 
 import { SpriteMaterial } from 'three'
@@ -48,8 +48,7 @@ export type RenderedNode = GraphNodes & {
   __threeObj?: any
 }
 
-type DataLinkView = {
-  id: Relations['id']
+type DataLinkView<R extends Relations = Relations> = R & {
   // Ratio from 0 to 1 of relation weight
   r: number
   source: GraphNodes['id']
@@ -160,7 +159,7 @@ function freshBlockShuffle(sortedBlockNodes: (Block & RenderedNode)[], origin: P
     if (i + 1 < sortedBlockNodes.length) {
       const curBlockNumber = parseBlockNumber(block.id)
       const nextBlockNumber = parseBlockNumber(sortedBlockNodes[i + 1].id)
-      if (curBlockNumber + 1 === nextBlockNumber) {
+      if (curBlockNumber + BigInt(1) === nextBlockNumber) {
         curDistOnLine += BLOCK_NODE_DISTANCE
       } else {
         // If non-sequential, place 2.1x distance away to represent the gap
@@ -185,7 +184,7 @@ function arrangeBlocks(nodes: RenderedNode[]) {
 
   originPoint = originPoint || calculateCenterOfMass(nodes)
 
-  allBlocks.sort((a, b) => parseBlockNumber(a.id) - parseBlockNumber(b.id))
+  allBlocks.sort((a, b) => Number(parseBlockNumber(a.id) - parseBlockNumber(b.id)))
   const pinnedBlocks = allBlocks.filter((n) => 'fz' in n)
   const unpinnedBlocks = allBlocks.filter((n) => !('fz' in n))
 
@@ -201,12 +200,12 @@ function arrangeBlocks(nodes: RenderedNode[]) {
     const unpinnedNum = parseBlockNumber(unpinned.id)
     if (unpinnedNum < firstPinned) {
       const baseZ = pinnedBlocks[0].z
-      const offsetZ = BLOCK_NODE_DISTANCE * (unpinnedNum + 1 === firstPinned ? 1 : 2.2)
+      const offsetZ = BLOCK_NODE_DISTANCE * (unpinnedNum + BigInt(1) === firstPinned ? 1 : 2.2)
       freezeNodeAt(asRendered, lineToSpiral(baseZ - offsetZ, originPoint))
       pinnedBlocks.splice(0, 0, asRendered)
     } else if (unpinnedNum > lastPinned) {
       const baseZ = pinnedBlocks[pinnedBlocks.length - 1].z
-      const offsetZ = BLOCK_NODE_DISTANCE * (unpinnedNum - 1 === lastPinned ? 1 : 2.2)
+      const offsetZ = BLOCK_NODE_DISTANCE * (unpinnedNum - BigInt(1) === lastPinned ? 1 : 2.2)
       freezeNodeAt(asRendered, lineToSpiral(baseZ + offsetZ, originPoint))
       pinnedBlocks.splice(pinnedBlocks.length, 0, asRendered)
     }
@@ -311,7 +310,7 @@ function checkForFreezingNodes(nodes: RenderedNode[]) {
   return hotCount
 }
 
-const calcWorldBox = (nodes: RenderedNode[]): [Point3d, Point3d] => {
+const calculateWorldBox = (nodes: RenderedNode[]): [Point3d, Point3d] => {
   const maxs = { x: -(Number.MAX_SAFE_INTEGER / 2), y: -(Number.MAX_SAFE_INTEGER / 2), z: -(Number.MAX_SAFE_INTEGER / 2) }
   const mins = { x: Number.MAX_SAFE_INTEGER / 2, y: Number.MAX_SAFE_INTEGER / 2, z: Number.MAX_SAFE_INTEGER / 2 }
 
@@ -372,20 +371,6 @@ const getRandomPointOrbitting = (point: Point3d, distance: number): Point3d => {
   const r3 = Math.sqrt(radius2d * radius2d - Math.pow(r2 - point[randomCoord2], 2)) * (Math.random() < 0.5 ? -1 : 1) + point[randomCoord3]
 
   return { [randomCoord2]: r2, [randomCoord3]: r3, [randomCoord]: r1 } as Point3d
-
-  /*
-  // Now solve for the unknown coordinate based on sphere equation
-  // x  = sqrt( -((y - y0)^2 + (z - z0)^2 - r^2) ) + x0
-  const randomVal1 = point[randomCoord] + distance * (Math.random() > 0.5 ? 1 : -1)
-  const randomVal2 = point[randomCoord2] + distance * (Math.random() > 0.5 ? 1 : -1)
-  const unknownVal = Math.sqrt(-((randomVal1 - point[randomCoord]) ^ 2 + (randomVal2 - point[randomCoord2]) ^ 2 - Math.pow(distance, 2))) + point[unknownCoord]
-
-  return {
-    [randomCoord]: randomVal1,
-    [randomCoord2]: randomVal2,
-    [unknownCoord]: unknownVal,
-  } as Point3d
-  */
 }
 
 const getRandomOrbittingPointFurthestFromMass = (nodes: RenderedNode[], point: Point3d, distance: number): Point3d => {
@@ -546,10 +531,8 @@ export function createThreeObj(node: RenderedNode): THREE.Object3D {
   return staticState.peekThreeObjOrSet(node.id, () => createThreeObjFresh(node))
 }
 
-//const MIN_AVG_ETH_FOR_SCALE = 0.001
-//const MAX_AVG_ETH_FOR_SCALE = 500.0
 const MAX_PHYSICAL_SCALAR = 8
-const DEFAULT_SCALAR = MAX_PHYSICAL_SCALAR / 3.0
+const UNLOADED_SCALAR = MAX_PHYSICAL_SCALAR * 0.25
 
 function generateSphere(scalar: number, color: string, opacity: number) {
   const sphere = new THREE.SphereGeometry(2.5 * scalar)
@@ -561,26 +544,38 @@ function generateSphere(scalar: number, color: string, opacity: number) {
   return new THREE.Mesh(sphere, skin)
 }
 
+function calculateScalebyEth(node: Address | Transaction, wei252: string): number {
+  const MIN_ETH_FOR_SCALE = 0.5
+  const MAX_ETH_FOR_SCALE = 10
+
+  const predicate = isFullAddress(node) ? isFullAddress : isFullTransaction
+  const nodes = staticState.peekRenderedNodes().filter((rn) => predicate(rn)) as (RenderedNode & { eth: string })[]
+
+  if (nodes.length === 0) {
+    return UNLOADED_SCALAR
+  }
+
+  const ethSum = nodes.reduce((sum, n) =>
+    sum + Math.min(MIN_ETH_FOR_SCALE, Math.max(+weiToEth(wei252ToBigInt(n.eth)), MAX_ETH_FOR_SCALE)),
+    0)
+
+  const avgEth = Number(ethSum) / nodes.length
+  const nodeEth = +weiToEth(wei252ToBigInt(wei252))
+  console.log('aaaa eth sum ' + JSON.stringify(ethSum, null, 2));
+  console.log('aaaa len ' + JSON.stringify(nodes.length, null, 2));
+  console.log('aaaa eth ' + JSON.stringify(nodeEth, null, 2));
+  return Math.max(1, Math.min(MAX_PHYSICAL_SCALAR, nodeEth / avgEth))
+}
+
 function calculateScale(rNode: RenderedNode): number {
   const node = rNode as GraphNodes
   // Address scale is relative to global avg eth
   if (isFullNode(node)) {
     if (isFullTransaction(node) || isFullAddress(node)) {
-      const MIN_ETH_FOR_SCALE = 0.5
-      const MAX_ETH_FOR_SCALE = 10
-
-      const predicate = isFullAddress(node) ? isFullAddress : isFullTransaction
-      const nodes = staticState.peekRenderedNodes().filter((rn) => predicate(rn)) as (RenderedNode & { eth: string })[]
-      const ethSum = nodes.reduce((sum, n) =>
-        sum + Math.min(MIN_ETH_FOR_SCALE, Math.max(+weiToEth(wei252ToBigInt(n.eth)), MAX_ETH_FOR_SCALE)),
-        0)
-
-      const avgEth = Number(ethSum) / nodes.length
-      const nodeEth = +weiToEth(wei252ToBigInt(node.eth))
-      return Math.max(1, Math.min(MAX_PHYSICAL_SCALAR, nodeEth / avgEth))
+      return calculateScalebyEth(node, node.eth)
     }
     else if (isFullBlock(node)) {
-      // Peek at immediate transactions and sum eth amounts
+      // Peek at immediate transactions and sum tx count
       const links = staticState.peekNodeRelations(node.id) || []
       let transCount = 0
 
@@ -600,8 +595,23 @@ function calculateScale(rNode: RenderedNode): number {
     }
   }
   else {
-    if (isTransaction(node) || isAddress(node) || isBlock(node)) {
-      return DEFAULT_SCALAR
+    if (isTransaction(node)) {
+      // Peek at immediate transactions and sum tx count
+      const links = staticState.peekNodeRelations(node.id) || []
+      let wei = ''
+      for (const link of links) {
+        const rel = staticState.peekRelation(link.id) as Relations | undefined
+        if (rel && (isRx(rel) || isTx(rel))) {
+          wei = rel.val
+          console.log('aaaa ' + JSON.stringify(wei, null, 2));
+          break
+        }
+      }
+
+      return wei === '' ? 1 : calculateScalebyEth(node, wei)
+    }
+    else if (isAddress(node) || isBlock(node)) {
+      return UNLOADED_SCALAR
     }
   }
 
@@ -611,7 +621,8 @@ function calculateScale(rNode: RenderedNode): number {
 function create3dNode(node: RenderedNode): THREE.Object3D {
   console.log('hash ' + JSON.stringify('create ' + node.id, null, 2));
   const scalar = calculateScale(node)
-  densure("Scalar too small?", scalar >= 1)
+  console.log('aaaa ' + JSON.stringify(scalar, null, 2));
+  densure("Scalar too small? " + scalar + ' ' + node.id, scalar >= 1)
   // Base case, node is not yet loaded, display partially
   if (!node || !isFullNode(node)) {
     console.log('hash not full node ' + node.id)

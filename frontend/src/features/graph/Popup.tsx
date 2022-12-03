@@ -10,14 +10,14 @@ import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
 import TableRow from '@mui/material/TableRow';
-import { Fragment, MutableRefObject, useRef, useState } from 'react';
+import { Fragment, MouseEvent, MouseEventHandler, MutableRefObject, useRef, useState } from 'react';
 import Draggable from 'react-draggable';
 import { useDispatch } from 'react-redux';
 import LoadingGif from '../../../src/assets/loading_blue.gif';
 import { AppDispatch } from '../../app/store';
 import { isWhale } from './global/biz-types';
-import { Address, ADDRESS_TYPE, Block, GraphNodes, isAddressId, isBlockId, isFullAddress, isFullBlock, isFullTransaction, isTransaction, isTransactionId, newHexValuedId, parseBlockNumber, parseHexId, Relations, Transaction } from './global/types';
-import { assertUnreachable, makeupName, radix252ToDecimal, radix252ToHex, radix252ToHumanDate, wei252ToBigInt, weiToEth } from './global/utils';
+import { Address, ADDRESS_TYPE, Block, BLOCK_TYPE, GraphNodes, isAddressId, isBlockId, isFullAddress, isFullBlock, isFullTransaction, isTransaction, isTransactionId, newHexValuedId, newNumberValuedId, parseBlockNumber, parseHexId, Relations, Transaction } from './global/types';
+import { assertUnreachable, fromRadix252, makeupName, radix252ToDecimal, radix252ToHex, radix252ToHumanDate, wei252ToBigInt, weiToEth } from './global/utils';
 import { AQueried, GraphState, LoadNodeSpec, staticState, TimelineCursor } from './graph-reducer';
 import { RenderedNode } from './rendering';
 import { Timeline } from './Timeline';
@@ -71,7 +71,7 @@ function renderNode(
     return <div key={`add-${id}`}>{AddressPopup(node as Address, timelineMark, timelineRels, timelineCursors, focusCam, dispatch)}</div>
   }
   else if (isBlockId(id)) {
-    return <div key={`blo-${id}`}>{BlockPopup(node as Block, dispatch)}</div>
+    return <div key={`blo-${id}`}>{BlockPopup(node as Block, focusCam, dispatch)}</div>
   }
   else if (isTransactionId(id)) {
     return TransactionPopup(node as Transaction, dispatch)
@@ -81,22 +81,23 @@ function renderNode(
 
 function LinkedCell(props: {
   text: string,
-  onLinkClick?: () => boolean,
-  href: string,
+  onLinkClick?: (e: MouseEvent<HTMLAnchorElement>) => boolean,
+  href?: string,
   children?: JSX.Element,
 }) {
   const [linkClicked, setLinkClicked] = useState(false)
 
-  const onClick = () => {
+  const onClick = (e: MouseEvent<HTMLAnchorElement>) => {
     setLinkClicked(true)
     if (props.onLinkClick) {
-      return props.onLinkClick()
+      return props.onLinkClick(e)
     }
+
     return false
   }
 
   return <div className='row-cell'>
-    <a className='row-link' style={{ whiteSpace: linkClicked ? 'normal' : 'nowrap' }} href={props.href} onClick={onClick}>{props.text}</a>
+    <a className='row-link' style={{ whiteSpace: linkClicked ? 'normal' : 'nowrap' }} href={props.href} onClick={onClick}>{props.text}</a> :
     {props.children}
   </div>
 }
@@ -104,7 +105,7 @@ function LinkedCell(props: {
 const COPY_SUCCESS_DISPLAY_TIME = 2000
 function LinkedCopyCell(props: {
   text: string,
-  onLinkClick?: () => boolean,
+  onLinkClick?: (e: MouseEvent<HTMLAnchorElement>) => boolean,
   href?: string,
 }) {
   const [lastCopyTime, setCopyTime] = useState(0)
@@ -118,7 +119,7 @@ function LinkedCopyCell(props: {
   const child = copied ?
     <IconButton key={`copied-${props.text}`} onClick={copyClicked} color="success" size="small" aria-label='Copy'><CheckIcon /></IconButton> :
     <Button key={`copy-${props.text}`} onClick={copyClicked} variant="outlined" size="small" aria-label='Copy'>Copy</Button>
-  const thing = <LinkedCell key={props.text} text={props.text} onLinkClick={props.onLinkClick} href={props.href || '#'} children={child}></LinkedCell>
+  const thing = <LinkedCell key={props.text} text={props.text} onLinkClick={props.onLinkClick} href={props.href} children={child}></LinkedCell>
   return thing
 }
 
@@ -159,7 +160,7 @@ function AddressPopup(
           <TableRow key="addrName">
             <TableCell key={`addrName-a`}>{node.name ? 'Name' : 'Nickname'}</TableCell>
             <TableCell key={`addrName-b`}>
-              {node.name ? <LinkedCell text={node.name} href="#" onLinkClick={() => {
+              {node.name ? <LinkedCell text={node.name} onLinkClick={() => {
                 const rendered = staticState.peekRenderedNode(node.id) as RenderedNode
                 focusCam(rendered)
                 return false
@@ -189,14 +190,16 @@ function AddressPopup(
 
 function BlockPopup(
   node: Block,
+  focusCam: FocusCam,
   dispatch: ReturnType<typeof useDispatch<AppDispatch>>) {
   const blockIdUi = <TableRow key="blockid">
     <TableCell key={`blockid-a`}>Block Number</TableCell>
     <TableCell key={`blockid-b`}>
-      {parseBlockNumber(node.id)}
+      {parseBlockNumber(node.id).toString(10)}
     </TableCell>
   </TableRow>
 
+  console.log('aaaa ' + JSON.stringify(node, null, 2));
   return <Fragment key={'block' + node.id}>
     <Typography component="h2" variant="h5" color="primary" gutterBottom>
       {getDescription(node)}
@@ -209,6 +212,30 @@ function BlockPopup(
           {radix252ToHumanDate(node.ts)}
         </TableCell>
       </TableRow>
+        <TableRow key="miner">
+          <TableCell key={`miner-a`}>{'Miner'}</TableCell>
+          <TableCell key={`miner-b`}>
+            <LinkedCopyCell text={'0x' + radix252ToHex(node.miner)} onLinkClick={() => {
+              const minerId = newHexValuedId(radix252ToHex(node.miner), ADDRESS_TYPE)
+              const rendered = staticState.peekRenderedNode(minerId)
+
+              const loadAction: AQueried<LoadNodeSpec> = {
+                type: 'Queried',
+                spec: {
+                  t: '0',
+                  nId: minerId,
+                  sel: '1',
+                }
+              }
+
+              dispatch(loadAction)
+              /*if (rendered) {
+                focusCam(rendered)
+              }*/
+              return false
+            }} />
+          </TableCell>
+        </TableRow>
         <TableRow>
           <TableCell key={`gasUsedBlock-a`}>Total Gas Used (Wei)</TableCell>
           <TableCell key={`gasUsedBlock-b`}>
@@ -245,34 +272,37 @@ function TransactionPopup(
     </TableCell>
   </TableRow>
 
+  //@ts-ignore
+  console.log('aaaa ' + JSON.stringify(node, null, 2));
   return <Fragment key={'tx-' + node.id}>
     {description}
     <Table size="medium"><TableBody>
-      <TableRow key="txid">
-        <TableCell key={`txid-a`}>ID</TableCell>
-        <TableCell key={`txid-b`} style={{ maxWidth: '10vw', wordWrap: 'break-word' }}>
-          {node.id}
-        </TableCell>
-      </TableRow>
       {hashUi}{isFullTransaction(node) ? (<Fragment>
+        <TableRow key="txval">
+          <TableCell key={`txid-a`}>ETH sent</TableCell>
+          <TableCell key={`txid-b`} style={{ maxWidth: '10vw', wordWrap: 'break-word' }}>
+            {weiToEth(wei252ToBigInt(node.eth))}
+          </TableCell>
+        </TableRow>
         <TableRow key="gas">
-          <TableCell key={`gas-a`}>Gas Paid (WEI)</TableCell>
-          <TableCell key={`gas-b`}>
-            {radix252ToDecimal(node.eth)}
+          <TableCell key={`txwei-a`}>Wei Sent</TableCell>
+          <TableCell key={`txwei-b`}>
+            {wei252ToBigInt(node.eth).toString()}
           </TableCell>
         </TableRow>
         <TableRow key="fromhash">
           <TableCell key={`fromhash-a`}>From Address</TableCell>
           <TableCell key={`fromhash-b`} style={{ maxWidth: '10vw', wordWrap: 'break-word' }}>
-            <LinkedCopyCell text={`0x${radix252ToDecimal(node.from)}`} onLinkClick={() => {
+            <LinkedCopyCell text={`${node.from}`} onLinkClick={(e) => {
               const loadAction: AQueried<LoadNodeSpec> = {
                 type: 'Queried',
                 spec: {
                   t: '0',
-                  nId: newHexValuedId(radix252ToHex(node.from), ADDRESS_TYPE),
+                  nId: newHexValuedId(node.from, ADDRESS_TYPE),
                   sel: '1',
                 }
               }
+
               dispatch(loadAction)
               return false
             }} />
@@ -281,12 +311,12 @@ function TransactionPopup(
         <TableRow key="tohash">
           <TableCell key={`tohash-a`}>To Address</TableCell>
           <TableCell key={`tohash-b`} style={{ maxWidth: '10vw', wordWrap: 'break-word' }}>
-            <LinkedCopyCell text={`0x${radix252ToDecimal(node.to)}`} onLinkClick={() => {
+            <LinkedCopyCell text={`${node.to}`} onLinkClick={() => {
               const loadAction: AQueried<LoadNodeSpec> = {
                 type: 'Queried',
                 spec: {
                   t: '0',
-                  nId: newHexValuedId(radix252ToHex(node.to), ADDRESS_TYPE),
+                  nId: newHexValuedId(node.to, ADDRESS_TYPE),
                   sel: '1',
                 }
               }
@@ -305,6 +335,15 @@ function TransactionPopup(
           <TableCell key={`txblockNumber-a`}>Block Number</TableCell>
           <TableCell key={`txblockNumber-b`}>
             <LinkedCopyCell text={radix252ToDecimal(node.blockNumber)} onLinkClick={() => {
+              const loadAction: AQueried<LoadNodeSpec> = {
+                type: 'Queried',
+                spec: {
+                  t: '0',
+                  nId: newNumberValuedId(fromRadix252(node.blockNumber), BLOCK_TYPE),
+                  sel: '1',
+                }
+              }
+              dispatch(loadAction)
               return false
             }} />
           </TableCell>

@@ -210,7 +210,7 @@ function* newGraphSaga(remoteFetcher: GraphFetcher, localFetcher: GraphFetcher) 
   }
 
   const loadNode = function* (nodeId: GraphNodes['id'], options: {
-    selectNode: boolean,
+    selectNode: 'afterload' | 'afterref' | false,
     emitRefAction: boolean,
     emitErr: boolean,
     emitHistory: boolean,
@@ -236,7 +236,7 @@ function* newGraphSaga(remoteFetcher: GraphFetcher, localFetcher: GraphFetcher) 
       const refAction: ANodesReffed = { type: 'NodesRef', nodeIds: [nodeId] }
       yield put(refAction)
     }
-    if (options.emitRefAction && options.selectNode) {
+    if (options.selectNode === 'afterref') {
       yield* selectNode(nodeId)
     }
     while (true) {
@@ -258,7 +258,7 @@ function* newGraphSaga(remoteFetcher: GraphFetcher, localFetcher: GraphFetcher) 
           yield put(bulkAction)
         }
         // Select now that it's loaded if a ref wasn't already selected
-        if (!options.emitRefAction && options.selectNode) {
+        if (options.selectNode === 'afterload') {
           yield* selectNode(nodeId)
         }
         if (handlePagination) {
@@ -387,14 +387,14 @@ function* newGraphSaga(remoteFetcher: GraphFetcher, localFetcher: GraphFetcher) 
     emitHistory: boolean,
     isExternal: boolean,
   ): ActionGen {
-    const blockNumber = +spec.c
+    const blockNumber = BigInt(spec.c)
     const maxVisibleNodes = +spec.m
     const latestBlock = { id: newNumberValuedId(blockNumber, BLOCK_TYPE) } as Block
     if (emitHistory) {
       yield* setHistoricQuery(spec, isExternal)
     }
     yield* loadNode(latestBlock.id, {
-      selectNode: true, emitRefAction: true, emitErr: true, emitHistory: false, isExternal
+      selectNode: 'afterref', emitRefAction: true, emitErr: true, emitHistory: false, isExternal
     })
     yield* loadGreedyBfs([latestBlock.id], Math.min(maxVisibleNodes, 100), 2)
     return
@@ -471,15 +471,15 @@ function* newGraphSaga(remoteFetcher: GraphFetcher, localFetcher: GraphFetcher) 
     yield* setHistoricQuery(spec, isExternal)
     yield put({ type: 'SearchLoading' } as ASearchLoading)
 
-    const asBlockNumber = +spec.s
-    const hex = asHexNoPrefix(spec.s)
+    const asDecimalInt = Number.isInteger(+spec.s) ? BigInt(spec.s) : null
+    const asHex = asHexNoPrefix(spec.s)
     const matchErrs: NodeErr[] = []
     let succeeded = false
 
     // Case 1: Block number
-    if (spec.s.length < 20 && Number.isInteger(asBlockNumber) && asBlockNumber >= 0) {
-      const blockId = newNumberValuedId(asBlockNumber, BLOCK_TYPE) as Block['id']
-      yield* loadNode(blockId, { selectNode: true, emitErr: true, emitRefAction: true, emitHistory: false, isExternal: false })
+    if (spec.s.length < 20 && asDecimalInt && asDecimalInt >= 0) {
+      const blockId = newNumberValuedId(asDecimalInt, BLOCK_TYPE) as Block['id']
+      yield* loadNode(blockId, { selectNode: 'afterload', emitErr: true, emitRefAction: true, emitHistory: false, isExternal: false })
       yield put(searchLoadedAction)
       return
     }
@@ -488,10 +488,10 @@ function* newGraphSaga(remoteFetcher: GraphFetcher, localFetcher: GraphFetcher) 
       yield put(searchLoadedAction)
     }
     // Case 3: Address / Transaction hash?
-    else if (hex) {
-      const asAddressId = newHexValuedId(hex, ADDRESS_TYPE) as Address['id']
+    else if (asHex) {
+      const asAddressId = newHexValuedId(asHex, ADDRESS_TYPE) as Address['id']
       debug('aaaa Loading addr ' + asAddressId)
-      const addressErr = yield* loadNode(asAddressId, { emitRefAction: false, selectNode: true, emitErr: false, emitHistory: false, isExternal: false })
+      const addressErr = yield* loadNode(asAddressId, { emitRefAction: false, selectNode: 'afterload', emitErr: false, emitHistory: false, isExternal: false })
       if (!addressErr) {
         // Select the address and done
         //yield put({ type: 'NodeSelect', nodeId: asAddressId } as ANodesSelected)
@@ -499,8 +499,8 @@ function* newGraphSaga(remoteFetcher: GraphFetcher, localFetcher: GraphFetcher) 
       } else {
         debug('aaaa Err addr ' + asAddressId)
         matchErrs.push(addressErr)
-        const asTransactionId = `${TRANSACTION_TYPE},${hexToRadix252(hex)}` as Transaction['id']
-        const transactionErr = yield* loadNode(asTransactionId, { emitRefAction: false, selectNode: true, emitErr: false, emitHistory: false, isExternal: false })
+        const asTransactionId = `${TRANSACTION_TYPE},${hexToRadix252(asHex)}` as Transaction['id']
+        const transactionErr = yield* loadNode(asTransactionId, { emitRefAction: false, selectNode: 'afterload', emitErr: false, emitHistory: false, isExternal: false })
         if (!transactionErr) {
           // Select the address and done
           //yield put({ type: 'NodeSelect', nodeId: asTransactionId } as ANodesSelected)
@@ -552,7 +552,7 @@ function* newGraphSaga(remoteFetcher: GraphFetcher, localFetcher: GraphFetcher) 
       const actionType = action.spec.t
       if (actionType === '0') {
         return loadNode(action.spec.nId, {
-          selectNode: action.spec.sel === '1',
+          selectNode: action.spec.sel === '1' ? 'afterload' : false,
           emitErr: true,
           emitRefAction: true,
           emitHistory: true,

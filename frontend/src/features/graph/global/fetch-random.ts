@@ -94,6 +94,8 @@ export const newRandomGraphFetcher: () => GraphFetcher = () => {
       //input: `${rand.intBetween(0, 999)}`,
       nonce: toRadix252(rand.intBetween(0, 999)),
       to: `0x${rand.intBetween(1, 9999999)}`,
+      status: rand.intBetween(0, 1) as 0 | 1,
+      gasUsed: '1',
       //transactionIndex: rand.intBetween(0, 20),
       //maxFeePerGas: `${rand.intBetween(1, 20)}`,
       //maxPriorityFeePerGas: `${rand.intBetween(0, 20)}`,
