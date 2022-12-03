@@ -9,6 +9,7 @@ export type HexString = string
 
 export type EChainState = {
   // Latest block number
+  // TODO(low): refactor to string
   bn: number
   // Radix252 timestamp string of latest block
   ts: string

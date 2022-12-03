@@ -177,16 +177,12 @@ const getVisibleLinks = memoizee((relsHash: string) => staticState.peekVisibleLi
   max: 1
 })
 
-//const defaultInitQuery: LoadLatestBlockSpec = ;
 export default function GraphWrap(props: GraphProps) {
   const dispatch = useDispatch<AppDispatch>()
   const [queryParams, setSearchParams] = useSearchParams()
   const state = useAppSelector((s) => s.graph)
-  /*const defaultInitQuery = new URLSearchParams(
-    { s: '0x0000000000000000000000000000000000000000', t: '4' } as SearchSpec
-  )*/
   const defaultInitQuery = new URLSearchParams(
-    { t: '1', c: '1', m: state.settings.maxNodes.toString() } as LoadLatestBlockSpec
+    { t: '1', c: props.globalState.eth?.bn || '1', m: state.settings.maxNodes.toString() } as LoadLatestBlockSpec
   )
   const graphRelViews = getVisibleLinks(state.relsDataHash)
   const graphRenderedNodes: RenderedNode[] = useMemo(

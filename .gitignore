@@ -3,7 +3,7 @@ backend/scripts
 **/.DS_STORE
 
 backend/dist
-frontend/build
+#frontend/build
 node_modules
 frontend/node_modules
 frontend/build

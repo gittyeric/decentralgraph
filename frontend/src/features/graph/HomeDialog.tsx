@@ -8,7 +8,7 @@ import './HomeDialog.css';
 const email = 'site@decentralgraph.com'
 const copyTitle = `Copied ${email} to clipboard`
 
-export function HomeDialog(props: {forceOpen?: boolean}) {
+export function HomeDialog(props: { forceOpen?: boolean }) {
     const [emailClicked, setEmailClicked] = useState(false)
     const [isOpen, setOpen] = useState(true || props.forceOpen)
     if (props.forceOpen !== undefined && props.forceOpen !== isOpen) {
@@ -33,15 +33,16 @@ export function HomeDialog(props: {forceOpen?: boolean}) {
         <IconButton size='large' className='close' onClick={closeClicked} aria-label="Close" ><CloseIcon /></IconButton>
         <DialogContent>
             <DialogContentText>
-                Decentralgraph will be a multi-blockchain interactive explorer.  Welcome to the alpha build containing a random Eth chain, we'll kick off Beta with the real Ethereum chain in a few days!  Get in touch for feature requests!
-          </DialogContentText>
-          <DialogContentText>
-              <Button target="_blank" href="https://discord.gg/yJARtpR3CF"><ChatIcon /> Chat on Discord</Button>
-              <Tooltip title={copyTitle} open={emailClicked} disableFocusListener disableHoverListener disableTouchListener>
-                <Button style={{display: 'none'}} onClick={copyEmail}><EmailIcon /> Email us</Button>
-              </Tooltip>
-          </DialogContentText>
-          <Button color='secondary' onClick={closeClicked}>Continue</Button>
+                Interactively explore all of Ethereum with Decentralgraph!  Token history and Layer 2's coming soon!
+            </DialogContentText>
+            <DialogContentText>
+                <Button target="_blank" href="https://discord.gg/yJARtpR3CF"><ChatIcon /> Chat on Discord</Button>
+                <Button target="_blank" href="https://github.com/gittyeric/decentralgraph"><ChatIcon /> Pitch in on Github</Button>
+                <Tooltip title={copyTitle} open={emailClicked} disableFocusListener disableHoverListener disableTouchListener>
+                    <Button style={{ display: 'none' }} onClick={copyEmail}><EmailIcon /> Email us</Button>
+                </Tooltip>
+            </DialogContentText>
+            <Button color='secondary' onClick={closeClicked}>Continue</Button>
         </DialogContent>
     </Dialog>
 }
