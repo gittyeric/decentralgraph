@@ -19,7 +19,7 @@ const io = new Server(config.core.bridgePort, {
   pingTimeout: 40000,
   cors: {
     origin: [
-      'http://decentralgraph.com', 'https://decentralgraph.com',
+      'http://decentralgraph.com', 'https://decentralgraph.com', 'https://edge.decentralgraph.com',
       'http://localhost', 'http://localhost:3000'],
     methods: ["GET", "POST"],
     allowedHeaders: "*",
