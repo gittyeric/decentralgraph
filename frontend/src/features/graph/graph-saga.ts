@@ -286,7 +286,7 @@ function* newGraphSaga(remoteFetcher: GraphFetcher, localFetcher: GraphFetcher) 
         }
 
         if (options.selectNode) {
-          yield* loadGreedyBfs([nodeId], 100, 2)
+          yield* loadGreedyBfs([nodeId], 100, 1)
         }
         return
       } else {
@@ -394,7 +394,7 @@ function* newGraphSaga(remoteFetcher: GraphFetcher, localFetcher: GraphFetcher) 
       yield* setHistoricQuery(spec, isExternal)
     }
     yield* loadNode(latestBlock.id, {
-      selectNode: 'afterref', emitRefAction: true, emitErr: true, emitHistory: false, isExternal
+      selectNode: 'afterload', emitRefAction: true, emitErr: true, emitHistory: false, isExternal
     })
     yield* loadGreedyBfs([latestBlock.id], Math.min(maxVisibleNodes, 100), 2)
     return

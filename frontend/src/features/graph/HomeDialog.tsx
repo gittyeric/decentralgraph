@@ -29,15 +29,17 @@ export function HomeDialog(props: { forceOpen?: boolean }) {
     }
 
     return <Dialog onClose={closeClicked} open={isOpen} id="homeDialog" >
-        <DialogTitle>Decentralgraph Alpha Build</DialogTitle>
+        <DialogTitle>Decentralgraph Beta Build</DialogTitle>
         <IconButton size='large' className='close' onClick={closeClicked} aria-label="Close" ><CloseIcon /></IconButton>
         <DialogContent>
             <DialogContentText>
-                Interactively explore all of Ethereum with Decentralgraph!  Token history and Layer 2's coming soon!
+                11-28-2022: Beta released!
+                Decentralgraph is an <a href='https://github.com/gittyeric/decentralgraph' target="_blank">open-source</a> Ethereum blockchain explorer allowing anyone to mod their own multi-chain explorer while helping secure decentralized networks.
+                Token history and Layer 2's coming soon!
             </DialogContentText>
             <DialogContentText>
                 <Button target="_blank" href="https://discord.gg/yJARtpR3CF"><ChatIcon /> Chat on Discord</Button>
-                <Button target="_blank" href="https://github.com/gittyeric/decentralgraph"><ChatIcon /> Pitch in on Github</Button>
+                <Button target="_blank" href="https://github.com/gittyeric/decentralgraph"><ChatIcon /> Code on Github</Button>
                 <Tooltip title={copyTitle} open={emailClicked} disableFocusListener disableHoverListener disableTouchListener>
                     <Button style={{ display: 'none' }} onClick={copyEmail}><EmailIcon /> Email us</Button>
                 </Tooltip>

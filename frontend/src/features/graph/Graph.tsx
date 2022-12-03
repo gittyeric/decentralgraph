@@ -42,7 +42,7 @@ export type Point3d = {
 let graphRef: MutableRefObject<unknown> | null = null
 export const focusCam = (node: RenderedNode) => {
   //@ts-ignore
-  if (!graphRef || !graphRef.current || !graphRef.current.cameraPosition) {
+  if (!graphRef || !graphRef.current || !graphRef.current.cameraPosition || !Number.isFinite(node.x)) {
     return
   }
   /*if (state.settings.vrEnabled) {
@@ -326,9 +326,7 @@ export default function GraphWrap(props: GraphProps) {
     }
   }*/
 
-  const memoGetLinkWidth = useCallback(getLinkWidth, [])
   const memoHandleLinkClick = useCallback(handleLinkClick, [])
-  const memoGetLinkColor = useCallback(getLinkColor, [])
   //const memoCreateThreeObj = useCallback(createThreeObj, [])
 
   const graph = useMemo(() => {
@@ -344,9 +342,9 @@ export default function GraphWrap(props: GraphProps) {
         linkDirectionalParticles={1.2}
         linkDirectionalParticleWidth={1.3}
         linkDirectionalParticleColor={() => 'rgb(255,255,50)'}
-        linkWidth={(link: any) => memoGetLinkWidth(link as RenderedLinkView)}
+        linkWidth={(link: any) => getLinkWidth(link as RenderedLinkView, state.selectedNode)}
         linkDirectionalParticleSpeed={() => 0.005}
-        linkColor={(link: any) => memoGetLinkColor(link as LinkView)}
+        linkColor={(link: any) => getLinkColor(link as LinkView, state.selectedNode)}
         onNodeClick={handleNodeClick}
         //onBackgroundClick={handleBgClick}
         //onLinkClick={memoHandleLinkClick}
@@ -366,9 +364,9 @@ export default function GraphWrap(props: GraphProps) {
       linkDirectionalParticles={1.2}
       linkDirectionalParticleWidth={1.3}
       linkDirectionalParticleColor={() => 'rgb(255,255,50)'}
-      linkWidth={(link: any) => memoGetLinkWidth(link as RenderedLinkView)}
+      linkWidth={(link: any) => getLinkWidth(link as RenderedLinkView, state.selectedNode)}
       linkDirectionalParticleSpeed={() => 0.005}
-      linkColor={(link: any) => memoGetLinkColor(link as LinkView)}
+      linkColor={(link: any) => getLinkColor(link as LinkView, state.selectedNode)}
       onNodeClick={handleNodeClick}
       onBackgroundClick={handleBgClick}
       onLinkClick={memoHandleLinkClick}
@@ -377,7 +375,7 @@ export default function GraphWrap(props: GraphProps) {
       controlType="orbit"
       nodeThreeObject={(n) => createThreeObj(n as RenderedNode)}
     />
-  }, [state.nodeDataHash, state.relsDataHash, state.settings, state.windowDims, state.query, window.location.href, dispatch])
+  }, [state.nodeDataHash, state.relsDataHash, state.settings, state.windowDims, state.query, state.selectedNode, window.location.href, dispatch])
 
   return <div ref={wrapperRef} style={{ width: '100%', height: '100%' }}>
     {graph}

@@ -427,10 +427,6 @@ export function getLinkTargetId(link: LinkView) {
   return isRenderedLink(link) ? link.target.id : link.target
 }
 
-export function getLinkWidth(link: RenderedLinkView) {
-  return link.r
-}
-
 const BLOCK_X_LEN = 23
 const BLOCK_Y_LEN = 4
 const BLOCK_Z_LEN = 14
@@ -560,11 +556,11 @@ function calculateScalebyEth(node: Address | Transaction, wei252: string): numbe
     0)
 
   const avgEth = Number(ethSum) / nodes.length
-  const nodeEth = +weiToEth(wei252ToBigInt(wei252))
+  const nodeEth = Math.min(MIN_ETH_FOR_SCALE, +weiToEth(wei252ToBigInt(wei252)))
   console.log('aaaa eth sum ' + JSON.stringify(ethSum, null, 2));
   console.log('aaaa len ' + JSON.stringify(nodes.length, null, 2));
   console.log('aaaa eth ' + JSON.stringify(nodeEth, null, 2));
-  return Math.max(1, Math.min(MAX_PHYSICAL_SCALAR, nodeEth / avgEth))
+  return Math.max(1.5, Math.min(MAX_PHYSICAL_SCALAR, nodeEth / avgEth))
 }
 
 function calculateScale(rNode: RenderedNode): number {
@@ -679,8 +675,15 @@ const white = [0xff, 0xff, 0xff]
 const hotRed = [0xff, 0x31, 0x31]
 const diffBlue = [white[0] - coldBlue[0], white[1] - coldBlue[1], white[2] - coldBlue[2]]
 const diffRed = [hotRed[0] - white[0], hotRed[1] - white[1], hotRed[2] - white[2]]
-export function getLinkColor(link: LinkView): string {
-  const ratio = link.r
+export function getLinkColor(link: LinkView, selectedId: GraphNodes['id'] | null): string {
+  // If attached to selected, paint it blue
+  if (selectedId && getLinkSourceId(link) === selectedId || getLinkTargetId(link) === selectedId) {
+    return 'rgb(160, 160, 255)'
+  }
+  return `rgb(240,240,240)`
+
+  // Maybe switch to something like this?
+  /*const ratio = link.r
   const coolest = ratio > 0.5 ? white : coldBlue
   const hottest = ratio > 0.5 ? hotRed : white
   const diff = ratio > 0.5 ? diffRed : diffBlue
@@ -695,4 +698,13 @@ export function getLinkColor(link: LinkView): string {
   //debug(color)
   return `rgb(255,255,255)`
   //return color;
+  */
+}
+
+export function getLinkWidth(link: RenderedLinkView, selectedId: GraphNodes['id'] | null) {
+  // If attached to selected, double the thickness
+  if (selectedId && getLinkSourceId(link) === selectedId || getLinkTargetId(link) === selectedId) {
+    return link.r * 1.5
+  }
+  return link.r
 }
