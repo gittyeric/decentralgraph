@@ -8,7 +8,10 @@ RUN mkdir frontend
 COPY backend/package* backend/
 COPY frontend/package* frontend/
 RUN cd frontend && npm i
+
 RUN cd backend && npm i
 COPY . .
+WORKDIR backend
 
-RUN cd backend && npm run build
+RUN npm run build
+CMD npm run edge:prod
