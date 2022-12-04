@@ -10,7 +10,7 @@ import { scanForERC20 } from './server/graph/state/scanner-erc20';
 import { fetchEnsName } from './server/graph/fetch-ethereum';
 import { coreLogger } from './util';
 
-export const CORE_SHUTDOWN_GRACE_PERIOD = 3000
+export const CORE_SHUTDOWN_GRACE_PERIOD = 6000
 
 const debug = instrumentDebug('run-core-init', [coreLogger.info, console.log])
 
@@ -19,7 +19,7 @@ export const runCoreBatch = async () => {
     debug('Successfully connected to Full Node')
   })
   // Start scanners
-  //scanForEns()
+  scanForEns()
   scanForERC20()
   scanForByteCode()
 

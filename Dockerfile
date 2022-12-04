@@ -3,8 +3,9 @@ FROM node:18.6-alpine
 
 RUN apk add python3 make g++
 
-COPY backend/package.json .
-RUN npm i
+RUN mkdir backend
+COPY backend/package* backend.
+RUN cd backend && npm i
 COPY . .
 
 RUN cd backend && npm run build

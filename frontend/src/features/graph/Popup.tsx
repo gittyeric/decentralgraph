@@ -45,9 +45,9 @@ function getDescription(node: GraphNodes): string | undefined {
     const fromId = newHexValuedId(node.from, ADDRESS_TYPE)
     if (node.to) {
       const toId = newHexValuedId(node.to, ADDRESS_TYPE)
-      return `${makeupName(fromId)} sent to ${makeupName(toId)}`
+      return `${makeupName(fromId, true)} sent to ${makeupName(toId, true)}`
     } else {
-      return `${makeupName(fromId)} created a Contract`
+      return `${makeupName(fromId, true)} created a Contract`
     }
   } else if (isTransactionId(id)) {
     return 'Transaction'
@@ -164,7 +164,7 @@ function AddressPopup(
                 const rendered = staticState.peekRenderedNode(node.id) as RenderedNode
                 focusCam(rendered)
                 return false
-              }} /> : makeupName(node.id)}
+              }} /> : makeupName(node.id, true)}
             </TableCell>
           </TableRow>
           <TableRow>

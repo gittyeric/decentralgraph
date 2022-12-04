@@ -23,13 +23,16 @@ export async function scanForEns() {
   // Ensure all historical state is crawled
   const ensScan = ensScanner.scan()
   for await (let [addrKey, addrObj] of ensScan) {
-    if (ensMaybeSeen.has(addrObj.id)) {
+    if (
+      // TODO: Consider TTL too somehow and store record deadline
+      // TODO(low): Switch to just this first line one day? When it comes to ENS ttls this would be preferrable
+      // to remembering forever
+      ensMaybeSeen.has(addrObj.id) ||
+      (addrObj.name && ensDB.doesExist(addrObj.name))) {
       continue
     }
-    debug(parseHexId(addrObj.id))
     try {
       const ensLookup = await fetchEnsName(parseHexId(addrObj.id));
-      debug('YYYYYYYYYYYY')
       ensMaybeSeen.add(addrObj.id)
       if (ensLookup) {
         debug(ensLookup);
@@ -45,7 +48,7 @@ export async function scanForEns() {
       }
     } catch (e) {
       debug(JSON.stringify((e as Error).stack))
-      throw e
+      //throw e
     }
   }
 }

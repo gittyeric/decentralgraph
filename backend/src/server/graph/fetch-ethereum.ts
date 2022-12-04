@@ -6,7 +6,6 @@ import { hexToRadix252 } from '../../../../frontend/src/features/graph/global/ut
 
 export async function fetchEnsName(ethAddress: string, retries: number = 1): Promise<string | null> {
   try {
-    console.log('fetch ens ' + ethAddress)
     return await provider.lookupAddress(ethAddress)
   } catch (e) {
     throw e;

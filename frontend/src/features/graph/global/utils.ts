@@ -324,11 +324,7 @@ export async function sleep(ms: number): Promise<void> {
   })
 }
 
-export function makeupShortName(id: GraphNode['id']): string {
-  return makeupName(id).split(' ')[1]
-}
-
-export function makeupName(id: GraphNode['id']): string {
+export function makeupName(id: GraphNode['id'], includeNicknameQuotes: boolean): string {
   if (id === 'a,') {
     return 'Null Address'
   }
@@ -340,7 +336,8 @@ export function makeupName(id: GraphNode['id']): string {
   const csv = uniqueNamesGenerator(config)
   const split = csv.split(',')
   const caps = split.map((s) => s[0].toUpperCase() + s.slice(1))
-  return caps.join(' ')
+  const fullName = caps.join(' ')
+  return includeNicknameQuotes ? `"${fullName}"` : fullName
 }
 
 export const weiToEth = function (number: bigint): string {

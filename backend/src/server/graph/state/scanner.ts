@@ -36,6 +36,9 @@ export function newScanner<K extends string, V>(name: string, sourceRootDb: Root
     let continueScan = () => { }
 
     async function* drainRealtime(isRealtime: boolean): AsyncGenerator<[K, V], undefined, undefined> {
+        if (realtimeInserts.length > 800) {
+            debug('Warning, queue for scanner ' + name + ' too high at ' + realtimeInserts.length)
+        }
         while (realtimeInserts.length > 0) {
             const recentInsert = realtimeInserts.pop()!
             if (isRealtime) {
@@ -59,6 +62,12 @@ export function newScanner<K extends string, V>(name: string, sourceRootDb: Root
         let iter = sourceDb.getRange(lastDbKey ? { start: lastDbKey } : {})
         let s = 0
         for (const { key, value } of iter) {
+            // Stop if shutting down after processing realtime entries
+            if (isShuttingDown()) {
+                debug(`Bailing early @ count ${count}`)
+                //@ts-ignore : This "never" returns in practice except this rare case
+                return
+            }
             if (typeof (key) === "string") {
                 const curDbKey = key as K
                 if (curDbKey === lastDbKey) {
@@ -75,13 +84,6 @@ export function newScanner<K extends string, V>(name: string, sourceRootDb: Root
                 } as ScanState<K>)
 
                 yield* drainRealtime(false)
-
-                // Stop if shutting down after processing realtime entries
-                if (isShuttingDown()) {
-                    debug(`Bailing early @ count ${count}`)
-                    //@ts-ignore : This "never" returns in practice except this rare case
-                    return
-                }
             } else {
                 debug(key)
                 throw new Error(`unknown key type in ${name}? ` + typeof (key) +

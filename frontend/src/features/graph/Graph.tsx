@@ -136,7 +136,7 @@ function findIdealPointBetween(circleRadius: number, linePoint0: Point3d, linePo
 const nodeToLabel = (node: NodeObject | GraphNodes): string => {
   const asRendered = node as GraphNodes
   if (isAddress(asRendered)) {
-    return asRendered.name || `"${makeupName(asRendered.id)}"`
+    return asRendered.name || makeupName(asRendered.id, true)
   }
   else if (isBlock(asRendered)) {
     return `Block ${parseBlockNumber(asRendered.id)}`
@@ -148,15 +148,16 @@ const nodeToLabel = (node: NodeObject | GraphNodes): string => {
       if (getGraphType(rel.id) === TX) {
         const from = rel.source as Address
         const to = rel.target as Address
-        const fromName = from.name || makeupName(from.id)
-        const toName = to.name || makeupName(to.id)
+        const fromName = from.name || makeupName(from.id, true)
+        const toName = to.name || makeupName(to.id, true)
         txName += `${fromName} to ${toName}`
         break
       } else if (getGraphType(rel.id) === RX) {
         const from = rel.target as Address
         const to = rel.source as Address
-        const fromName = from.name || makeupName(from.id)
-        const toName = to.name || makeupName(to.id)
+        const fromName = from.name || makeupName(from.id, true)
+        const toName = to.name || makeupName(to.id, true)
+        console.log('pos tooo' + JSON.stringify(to, null, 2));
         txName += `${fromName} to ${toName}`
         break
       }

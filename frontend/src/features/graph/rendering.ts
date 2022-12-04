@@ -122,6 +122,7 @@ function freezeNodeAt(
   asRendered.fx = pos.x
   asRendered.fy = pos.y
   asRendered.fz = pos.z
+  asRendered.visTs = +new Date()
   debug(`Freezing ${asRendered.id}`)
 }
 
@@ -407,6 +408,13 @@ const getRandomPointNearCenter = (nodes: RenderedNode[], maxDistance: number): P
 export const toGraphViewNodes = (viewMode: GraphState['settings']['viewMode'], selectedNodeId: GraphNodes['id'] | null) => {
   debug(`Paint Graph Nodes ${viewMode.length}`)
   const nodes: RenderedNode[] = staticState.peekRenderedNodes()
+  // Ensure that selected node is always frozen
+  if (selectedNodeId) {
+    const selected = staticState.peekRenderedNode(selectedNodeId)
+    if (selected && !selected.fx) {
+      freezeNodeAt(selected, selected)
+    }
+  }
   if (viewMode === 'chain') {
     arrangeBlocks(nodes)
   }
