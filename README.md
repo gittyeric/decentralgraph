@@ -1,8 +1,8 @@
 # Decentralgraph
 
-Almost in Beta!
+Now in [Beta](https://decentralgraph.com)!
 
-More decentralized ways to explore the blockchain, ahoy!  This repo is the code running decentralgraph.com which lets you explore the Ethereum blockchain intuitively in 3D.  If you own an abnormal number of SSD's, you can run your own blockchain explorer while helping to secure them! 
+More decentralized ways to explore the blockchain, ahoy!  This repo is the code running [decentralgraph.com](https://decentralgraph.com) which lets you explore the Ethereum blockchain intuitively in 3D.  If you own a few solid SSD's, you can run your own blockchain explorer while helping to secure decentralized networks!
 
 ## Running
 

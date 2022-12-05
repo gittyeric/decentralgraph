@@ -1,6 +1,6 @@
 # Decentralgraph frontend
 
-Almost in Beta!
+Now in [Beta](https://decentralgraph.com)!
 
 DG's frontend is bread-and-butter React / Redux frontend with some D3 physics and Three.js 3d visuals sprinkled in in hopes of being the most explorery blockchain explorer.
 
