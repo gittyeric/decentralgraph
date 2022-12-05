@@ -13,6 +13,7 @@ import { Toast } from '../dashboard/Toast';
 import { Address, getGraphType, GraphNodes, isAddress, isBlock, isFullTransaction, isTransaction, parseBlockNumber, RX, TX } from './global/types';
 import { assertUnreachable, densure, wei252ToBigInt, instrumentDebug, makeupName, radix252ToDecimal, weiToEth } from './global/utils';
 import { ANodeSelected, AQueried, AUrlQueryUpdated, LoadLatestBlockSpec, LoadNodeSpec, staticState } from './graph-reducer';
+import { HomeDialog } from './HomeDialog';
 import { Popup } from './Popup';
 import { BLOCK_NODE_DISTANCE, createThreeObj, getLinkColor, getLinkWidth, isRenderedLink, LinkView, RenderedLinkView, RenderedNode, TIME_TILL_FREEZE, toGraphViewNodes, unfreezeAll } from './rendering';
 import { NavSearch } from './search';
@@ -382,8 +383,7 @@ export default function GraphWrap(props: GraphProps) {
     {graph}
     {state.selectedNode ? <Popup dispatch={dispatch} state={state} focusCam={focusCam} /> : ''}
     <Settings dispatch={dispatch} state={state} focusCam={focusCam} zoomToFit={zoomToFit} unfreezeAll={unfreezeAll} />
-    <div //<HomeDialog />
-    />
+    <HomeDialog />
     <NavSearch dispatch={dispatch} isLoading={state.searchLoading} />
     <Toast notification={state.notification} />
   </div>;
