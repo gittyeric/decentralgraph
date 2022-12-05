@@ -16,7 +16,7 @@ const io = new Server(config.edge.edgePort, {
   pingTimeout: 40000,
   cors: {
     origin: [
-      'http://decentralgraph.com', 'https://decentralgraph.com', 'https://edge.decentralgraph.com',
+      'http://edge.decentralgraph.com', 'https://decentralgraph.com', 'https://edge.decentralgraph.com',
       'http://localhost', 'http://localhost:8080'],
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     allowedHeaders: "*",
