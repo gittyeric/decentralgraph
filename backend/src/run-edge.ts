@@ -17,7 +17,7 @@ const io = new Server(config.edge.edgePort, {
   cors: {
     origin: [
       'http://edge.decentralgraph.com', 'https://decentralgraph.com', 'https://edge.decentralgraph.com',
-      'http://localhost', 'http://localhost:8080'],
+      'http://localhost', 'http://localhost:3000', 'http://localhost:8080'],
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     allowedHeaders: "*",
   },

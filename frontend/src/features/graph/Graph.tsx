@@ -184,7 +184,7 @@ export default function GraphWrap(props: GraphProps) {
   const [queryParams, setSearchParams] = useSearchParams()
   const state = useAppSelector((s) => s.graph)
   const defaultInitQuery = new URLSearchParams(
-    { t: '1', c: /*props.globalState.eth?.bn ||*/ '8964209', m: state.settings.maxNodes.toString() } as LoadLatestBlockSpec
+    { t: '1', c: /*props.globalState.eth?.bn ||*/ '16172310', m: state.settings.maxNodes.toString() } as LoadLatestBlockSpec
   )
   const graphRelViews = getVisibleLinks(state.relsDataHash)
   const graphRenderedNodes: RenderedNode[] = useMemo(
@@ -214,14 +214,23 @@ export default function GraphWrap(props: GraphProps) {
   // Initialize camera
   useEffect(() => {
     if (!state.camera.initialized && state.query && state.nodeDataHash !== '') {
-      dispatch({ type: 'CameraInitialize' });
       // Do an init reset to get roughly correct,
       setTimeout(() => zoomToFit(1900), 1000)
-      // After physics has chilled out a bit, finalize the camera
-      setTimeout(() => zoomToFit(1000), TIME_TILL_FREEZE + 500)
-    }
-    if (state.nodeDataHash === '') {
-
+      setTimeout(() => {
+        // After physics has chilled out a bit, finalize the camera
+        let focused = false
+        if (state.selectedNode) {
+          const node = staticState.peekRenderedNode(state.selectedNode)
+          if (node) {
+            focused = true
+            focusCam(node)
+          }
+        }
+        if (!focused) {
+          zoomToFit(1000)
+        }
+      }, TIME_TILL_FREEZE + 500)
+      dispatch({ type: 'CameraInitialize' });
     }
   })
 
