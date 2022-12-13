@@ -184,7 +184,7 @@ export default function GraphWrap(props: GraphProps) {
   const [queryParams, setSearchParams] = useSearchParams()
   const state = useAppSelector((s) => s.graph)
   const defaultInitQuery = new URLSearchParams(
-    { t: '1', c: props.globalState.eth?.bn || '16172310', m: state.settings.maxNodes.toString() } as LoadLatestBlockSpec
+    { t: '1', c: /*props.globalState.eth?.bn ||*/ '16172310', m: state.settings.maxNodes.toString() } as LoadLatestBlockSpec
   )
   const graphRelViews = getVisibleLinks(state.relsDataHash)
   const graphRenderedNodes: RenderedNode[] = useMemo(
