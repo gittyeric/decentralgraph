@@ -333,6 +333,93 @@ export const newCoreFetcher: () => GraphFetcher = () => {
           yield [childLink]
         }
 
+        // Yield miner relation
+        const minerId = newHexValuedId(rawBlock.miner, ADDRESS_TYPE)
+        const miner = addrDB.get(minerId)!
+        const mine: Miner = {
+          id: relationId(MINER, minerId, fullBlock.id),
+          ts: ts252,
+        }
+        debug(`Yield miner`)
+        yield [fullBlock, miner, mine]
+        const trans = rawBlock.transactions.map((t) => ({id: newHexValuedId(t.hash!, TRANSACTION_TYPE)}) as Transaction)
+        debug(`Yield ${trans.length} trans`)
+        const un = new Set<string>()
+        for (const t of trans) {
+          if (un.has(t.id)) {
+            debug(`DUPE! ${t.id}`)
+            un.add(t.id)
+          }
+        }
+        debug(`Yield ${(new Set(trans.map((t) => t.id))).size} UNIQUE trans`)
+        if (trans.length === 0) {
+          debug(JSON.stringify(trans, null, 2));
+        }
+        yield trans
+      } catch (e) {
+        debug(`getBlock Error! ${(e as Error).message}`)
+        return {
+          c: FETCH_ERRORS.NETWORK_ERROR,
+          db: (e as Error).message,
+          usr: `Couldn't find block ${blockNumber}, please try again shortly`
+        } as NodeErr
+      }
+
+      debug(`fb ${blockNumber} done`)
+    },
+    /*fetchBlock: async function* (id: Block['id']) {
+      debug(`fetchBlock (${parseBlockNumber(id)})`)
+      const chainState = await getChainState()
+      const blockNumber = parseBlockNumber(id)
+      if (blockNumber < 0) {
+        return {
+          c: FETCH_ERRORS.NODE_NOT_EXISTS,
+          db: 'Negative block number',
+          usr: `Block numbers start from zero`,
+        } as NodeErr
+      }
+      if (blockNumber > chainState.bn) {
+        debug(`Error fetching block ${blockNumber} > ${chainState.bn}`)
+        return {
+          c: FETCH_ERRORS.NODE_NOT_EXISTS,
+          db: 'Block number too big',
+          usr: `Block ${blockNumber} exceeds latest block #${chainState.bn}`,
+        } as NodeErr
+      }
+      try {
+        const rawBlock = await provider.getBlockWithTransactions('0x' + blockNumber.toString(16))
+        if (!rawBlock) {
+          return {
+            c: FETCH_ERRORS.NODE_NOT_EXISTS,
+            db: `Block ${blockNumber} not found`,
+            usr: `Block number ${blockNumber} does not exist`,
+          } as NodeErr
+        }
+        const fullBlock = rawToFullBlock(rawBlock)
+        const ts252 = decimalToRadix252(`${rawBlock.timestamp}`)
+
+        // Yield incoming parent block link
+        if (blockNumber > 0) {
+          const parentId = newNumberValuedId(blockNumber - BigInt(1), BLOCK_TYPE)
+          const parentLink: ParentBlock = {
+            id: relationId(PARENT_BLOCK, parentId, fullBlock.id),
+            ts: ts252,
+          }
+          debug(`Yield parent block ${blockNumber - BigInt(1)}`)
+          yield [parentLink]
+        }
+
+        // Yield child block
+        if (blockNumber < chainState.bn) {
+          const childId = newNumberValuedId(blockNumber + BigInt(1), BLOCK_TYPE)
+          const childLink: ParentBlock = {
+            id: relationId(PARENT_BLOCK, fullBlock.id, childId),
+            ts: ts252, //TODO: this ts isn't technically correct, but meh. Maybe load the child one day?
+          }
+          debug(`Yield child block ${blockNumber + BigInt(1)}`)
+          yield [childLink]
+        }
+
         const pendingTransNodesAndRels = await Promise.all(rawBlock.transactions.map(async (t) => {
           // TODO: maybe include T rels too?
           const [ft, ftRels] = await fetchTransactionRels(t, rawBlock)
@@ -377,7 +464,7 @@ export const newCoreFetcher: () => GraphFetcher = () => {
       }
 
       debug(`fb ${blockNumber} done`)
-    },
+    },*/
     fetchTransaction: async function* (id: Transaction['id']) {
       debug(`fetchTransaction(${id})`)
       const hash = parseHexId(id)

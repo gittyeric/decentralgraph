@@ -18,10 +18,12 @@ import {
   FullBlock,
   FullTransaction,
   GraphNodes,
+  isAddress,
   isFullAddress,
   isFullBlock,
   isFullTransaction,
   isGraphNode,
+  isTransaction,
   PaginatedNode,
   Transaction,
   TransactionRelations
@@ -336,7 +338,7 @@ export function cachedGraphFetcher(
           for (const b of next.value) {
             if (isFullBlock(b)) {
               block = b
-            } else if (isFullTransaction(b) || isFullAddress(b)) {
+            } else if (isTransaction(b) || isAddress(b)) {
               yield [b]
             }
             else {
