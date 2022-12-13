@@ -176,11 +176,6 @@ export type RelationToType<R extends Relations> =
   | (R extends Miner ? typeof MINER : never)
   | never
 
-type Relation = {
-  id: `${RelationType},${string}`
-  ts: string
-}
-
 // Legal relation types
 export type RelationToNodeTypes = {
   [CONTRACT_CREATED]: [Transaction, Address]
@@ -189,6 +184,11 @@ export type RelationToNodeTypes = {
   [CHILD_TRANSACTION]: [Block, Block]
   [PARENT_BLOCK]: [Block, Transaction]
   [MINER]: [Address, Block]
+}
+
+type Relation = {
+  id: `${RelationType},${string}`
+  ts: string
 }
 
 type NewRelation<R extends RelationType> = Relation & {

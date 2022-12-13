@@ -70,7 +70,7 @@ export function isErr(obj: any): obj is Err<FETCH_ERRORS> {
 // Returns true if end of pagination is reached
 // Returns false if more pages can be loaded
 export type AddressObjs = FullAddress | AddressRelations;
-export type BlockObjs = FullBlock | FullAddress | FullTransaction | BlockRelations | TransactionRelations;
+export type BlockObjs = FullBlock | FullAddress | Transaction | FullTransaction | BlockRelations | TransactionRelations;
 export type TransObjs = FullTransaction | FullBlock | TransactionRelations;
 export type StateObjs = EChainState;
 export type AddressObjsGenerator = AsyncGenerator<AddressObjs[], undefined | NodeErr, undefined>
