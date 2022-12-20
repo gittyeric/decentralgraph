@@ -25,10 +25,14 @@ const io = new Server(config.edge.edgePort, {
 
 const wsFetcher = newWsFetcher(config.edge.coreWsUrl, 5000)
 const fetchLruCache = newMemLruCache(20000, 100, 1000, 1000 * 60 * 60 * 24)
-const cachedFetcher = cachedGraphFetcher(fetchLruCache, wsFetcher, true, 'mem', false)
+const cachedFetcher = cachedGraphFetcher(fetchLruCache, wsFetcher.fetcher, true, 'mem', false)
 
 io.on("connection", (socket) => {
   wireEndpointsToSocket(socket, Object.values(newContractEndpoints(cachedFetcher)))
 });
 
-newHealthApp(9000)
+const edgeLiveAndReady = async () => {
+  return wsFetcher.socket.connected
+}
+
+newHealthApp(9000, edgeLiveAndReady, edgeLiveAndReady)

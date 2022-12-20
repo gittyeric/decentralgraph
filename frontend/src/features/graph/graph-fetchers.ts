@@ -36,7 +36,7 @@ function getRandomFetchers() {
 
 // Prod remote fetching
 function getRemoteFetchers() {
-  const wsFetcher = newWsFetcher(WEBSOCKET_URL, CLIENT_REQUEST_TIMEOUT)
+  const wsFetcher = newWsFetcher(WEBSOCKET_URL, CLIENT_REQUEST_TIMEOUT).fetcher
   const iDbRemoteFetcher = cachedGraphFetcher(
     indexDbCache,
     wsFetcher,

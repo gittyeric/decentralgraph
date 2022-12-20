@@ -1,4 +1,5 @@
 import { io, Socket } from 'socket.io-client'
+import { DefaultEventsMap } from 'socket.io/dist/typed-events'
 import {
   addressContract,
   addressTimelineContract,
@@ -19,17 +20,17 @@ let socket: Socket
 function getSocketClient(
   url: string
 ): Socket {
-    if (!socket) {
-      debug(`Attempting socket connection to ${url}`)
-      socket = io(url)
-      socket.connect()
-      debug(`Called socket.connect()`)
+  if (!socket) {
+    debug(`Attempting socket connection to ${url}`)
+    socket = io(url)
+    socket.connect()
+    debug(`Called socket.connect()`)
 
-      socket.once('connect', () => {
-        debug('Connected to ' + url)
-      })
-    }
-    return socket
+    socket.once('connect', () => {
+      debug('Connected to ' + url)
+    })
+  }
+  return socket
 }
 
 // Convert thrown inner gen errors to app-layer Err's
@@ -50,7 +51,10 @@ async function* convertToErr<T, RETURN, NEXT>(gen: AsyncGenerator<T, RETURN, NEX
   }
 }
 
-export const newWsFetcher = function newWsFetcher(url: string, clientTimeout: number): GraphFetcher {
+export const newWsFetcher = function newWsFetcher(url: string, clientTimeout: number): {
+  fetcher: GraphFetcher,
+  socket: Socket<DefaultEventsMap, DefaultEventsMap>
+} {
   const boundSocket = getSocketClient(url)
 
   //@ts-ignore
@@ -72,5 +76,5 @@ export const newWsFetcher = function newWsFetcher(url: string, clientTimeout: nu
     fetchTransaction: (id: Transaction['id']) => convertToErr(fetchTransaction(id)),
     requestServerPush: requestServerPush,
   }
-  return fetcher
+  return { fetcher, socket: boundSocket }
 }
