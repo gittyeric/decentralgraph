@@ -12,8 +12,12 @@ export function newHealthApp(
 
   app.get('/health/ready', async (req, res) => {
     try {
-      await ready()
-      res.send("Ready")
+      if (await ready()) {
+        res.send("Ready")
+      }
+      else {
+        res.status(500).send()
+      }
     } catch (e) {
       res.status(500).send()
     }
@@ -21,8 +25,11 @@ export function newHealthApp(
 
   app.get('/health/live', async (req, res) => {
     try {
-      await live()
-      res.send("Live");
+      if (await live()) {
+        res.send("Live");
+      } else {
+        res.status(500).send()
+      }
     } catch (e) {
       res.status(500).send()
     }
