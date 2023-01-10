@@ -12,22 +12,29 @@ type DiskDriver = {
 
 const debug = instrumentDebug('cache-indexdb')
 
-const diskDriver: Promise<DiskDriver> = localforage.defineDriver(lruDriver).then(function () {
-  var lf = localforage.createInstance({
-    driver: 'lruStorage',
-    cacheSize: 200000,
-    lruKey: 'ts',
-    lruIndex: 'dg',
-  })
+let _diskDriver: Promise<DiskDriver>;
+async function getDiskDriver(): Promise<DiskDriver> {
+  if (_diskDriver) {
+    return _diskDriver;
+  }
+  _diskDriver = localforage.defineDriver(lruDriver).then(function () {
+    var lf = localforage.createInstance({
+      driver: 'lruStorage',
+      cacheSize: 200000,
+      lruKey: 'ts',
+      lruIndex: 'dg',
+    })
 
-  lf.ready()
-  return lf
-})
+    lf.ready()
+    return lf
+  });
+  return _diskDriver
+}
 
 const get = async <V extends CacheValue>(key: CacheKey) => {
   try {
     const start = new Date().getTime()
-    const hit = await diskDriver.then(async (driver) => {
+    const hit = await getDiskDriver().then(async (driver) => {
       const gotten = await driver.getItem(key)
       debug(`Get idb ${new Date().getTime() - start}ms`)
       return gotten
@@ -55,7 +62,7 @@ export const indexDbCache: Cache = {
   get,
   set: async (key: CacheKey, val: CacheValue) => {
     try {
-      const driver = await diskDriver
+      const driver = await getDiskDriver()
       await driver.setItem(key, JSON.stringify(val))
     } catch (e) {
       debug(e as Error)

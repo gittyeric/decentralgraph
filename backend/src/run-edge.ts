@@ -10,8 +10,6 @@ import { newHealthApp } from "./server/health";
 // Edge servers basically just implement GraphFetcher over Socket.io and that's it!
 const debug = instrumentDebug('edge')
 
-let isConnected = false
-
 debug('Starting edge on port ' + config.edge.edgePort)
 const io = new Server(config.edge.edgePort, {
   pingInterval: 45000,
@@ -33,16 +31,8 @@ io.on("connection", (socket) => {
   wireEndpointsToSocket(socket, Object.values(newContractEndpoints(cachedFetcher)))
 });
 
-wsFetcher.socket.on('connection', () => {
-  isConnected = true
-})
-
-wsFetcher.socket.on('disconnect', () => {
-  isConnected = false
-})
-
 const edgeLiveAndReady = async () => {
-  return isConnected;
+  return wsFetcher.socket.connected;
 }
 
 newHealthApp(9000, edgeLiveAndReady, edgeLiveAndReady)

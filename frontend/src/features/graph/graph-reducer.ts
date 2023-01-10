@@ -24,26 +24,8 @@ import {
   LinkView, RenderedNode
 } from './rendering'
 
-function guessBestVisibleCount() {
-  const minScreenSizeScalar = 200.0
-  const maxScreenSizeScalar = 2000.0
-  const minVisibleCount = 300
-  const maxVisibleCount = 1500
-
-  const maxExtraCount = maxVisibleCount - minVisibleCount
-  const screenScalarMin = Math.max(0, window.innerWidth - minScreenSizeScalar)
-  const screenScalarMax = Math.min(screenScalarMin, maxScreenSizeScalar - minScreenSizeScalar)
-  const screenScalar = screenScalarMax / (maxScreenSizeScalar - minScreenSizeScalar)
-
-  const idealCount = Math.ceil(screenScalar * maxExtraCount + minVisibleCount)
-  const humanCount = idealCount - (idealCount % 25)
-  return humanCount
-}
-
 export const DEFAULT_VISIBLE_NODES = guessBestVisibleCount()
 
-// Debug mode runs locally with no network dependencies
-export const debugMode = true
 const debug = instrumentDebug('graph-reducer')
 
 // Track total balance of all visibleNodes
@@ -146,16 +128,21 @@ export const staticState = {
   addrBalanceSum: () => addrBalanceSum,
 }
 
-/*function _removeNodeLinks(nodeId: GraphNodes['id'], relIdsToDelete: Set<Relations['id']>): void {
-  const nodeRels = visLinksByNode[nodeId]
-  const removalIndexes: number[] = []
-  for (let i = 0; i < nodeRels.length; i++) {
-    if (relIdsToDelete.has(nodeRels[i].id)) {
-      removalIndexes.push(i)
-    }
-  }
-  _removeLinks(removalIndexes, nodeRels)
-}*/
+function guessBestVisibleCount() {
+  const minScreenSizeScalar = 200.0
+  const maxScreenSizeScalar = 2000.0
+  const minVisibleCount = 300
+  const maxVisibleCount = 1500
+
+  const maxExtraCount = maxVisibleCount - minVisibleCount
+  const screenScalarMin = Math.max(0, window.innerWidth - minScreenSizeScalar)
+  const screenScalarMax = Math.min(screenScalarMin, maxScreenSizeScalar - minScreenSizeScalar)
+  const screenScalar = screenScalarMax / (maxScreenSizeScalar - minScreenSizeScalar)
+
+  const idealCount = Math.ceil(screenScalar * maxExtraCount + minVisibleCount)
+  const humanCount = idealCount - (idealCount % 25)
+  return humanCount
+}
 
 function removeVisLinksByIds(removalIds: Set<Relations['id']>): void {
   const removalIndexes: number[] = []
@@ -378,10 +365,11 @@ function addRel(sourceId: GraphNodes['id'], targetId: GraphNodes['id'], rel: Lin
   addVisLinkByNode(sourceId, targetId, rel)
 }
 
-// TODO: remove
 //const throwError = (msg: string) => { throw new Error(msg) }
-const throwError = (msg: string) => { console.error(msg) }
-function azzert() {
+const throwError = (msg: string) => { console.error(msg) } // { throw new Error(msg) }
+
+// Exported for tests
+export function assertConsistentNodeState(maxNodes: number) {
   for (const link of visibleLinks) {
     const sourceId = getLinkSourceId(link)
     const targetId = getLinkTargetId(link)
@@ -402,17 +390,20 @@ function azzert() {
       throwError('rel has nodes not in visibleNodes')
     }
   }
-  /*if (visibleNodes.size > 0) {
+  if (visibleNodes.size > maxNodes) {
+    throwError(`Nodes overflowed? (${visibleNodes.size}/${maxNodes})`)
+  }
+  if (visibleNodes.size === maxNodes) {
     for (const x of visibleNodes.entries()) {
       if (!visibleLinks.some((vl) => {
         const sourceId = getLinkSourceId(vl)
         const targetId = getLinkTargetId(vl)
         return x[0] === targetId || x[0] === sourceId
       })) {
-        //throw new Error('visibleNodes contains a node with no relations!')
+        throwError(`visibleNodes contains an island node! (${x[0]})`)
       }
     }
-  }*/
+  }
 }
 
 type ActionReducer<A extends GraphActions> = (s: GraphState, a: A) => GraphState
@@ -466,7 +457,7 @@ routes['NodesLoad'] = (s: GraphState, a: ANodesLoaded) => {
     updated = true
   }
 
-  azzert()
+  assertConsistentNodeState(s.settings.maxNodes)
   return updated
     ? {
       ...s,
@@ -502,19 +493,19 @@ routes['GraphBulkUpdate'] = (s: GraphState, a: AGraphBulkUpdated) => {
       type: 'RelsLoad',
       rels: a.rels,
     })
-  azzert()
+  assertConsistentNodeState(s.settings.maxNodes)
   const loaded =
     routes['NodesLoad'](rels, {
       type: 'NodesLoad',
       nodes: a.loaded,
     })
-  azzert()
+  assertConsistentNodeState(s.settings.maxNodes)
   const reffed =
     routes['NodesRef'](loaded, {
       type: 'NodesRef',
       nodeIds: a.refs,
     })
-  azzert()
+  assertConsistentNodeState(s.settings.maxNodes)
   return reffed
 }
 
@@ -582,7 +573,7 @@ routes['RelsLoad'] = (s: GraphState, a: ARelsLoaded) => {
   }
   const relsChanged = addRels(a.rels, s.selectedNode, s.settings.maxNodes) > 0
 
-  azzert()
+  assertConsistentNodeState(s.settings.maxNodes)
   if (relsChanged) {
     return {
       ...s,
@@ -956,7 +947,7 @@ routes['SetMaxNodes'] = (s: GraphState, a: ASetMaxNodes) => {
         return keep
       }
     )
-    azzert()
+    assertConsistentNodeState(s.settings.maxNodes)
     return {
       ...s,
       nodeDataHash: `${a.maxNodes}-resized`,
@@ -1099,7 +1090,7 @@ routes['SelectedRelsPageLoaded'] = (s: GraphState, a: ASelectedRelsPageLoaded) =
   // Old page is wiped, now add the new page
   // by re-using RelsLoad
   const pageLoaded = routes['RelsLoad'](nodeLoadState, { type: 'RelsLoad', rels: a.visibleRels })
-  azzert()
+  assertConsistentNodeState(s.settings.maxNodes)
   return {
     ...pageLoaded,
     timelineRels: a.timelineRels,

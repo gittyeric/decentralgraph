@@ -32,7 +32,6 @@ async function* generateRandomNodesOfType<FN extends FullNodes>(
   gen: () => FN
 ): AsyncGenerator<FN, undefined, unknown> {
   for (let i = 0; i < count; i++) {
-    await sleep(rand.intBetween(0, MAX_RANDOM_TIMEOUT))
     yield gen()
   }
   return undefined
@@ -53,246 +52,242 @@ function normalize(
   return nfp.map((n) => [n[0], n[1] * scalar])
 }
 
-export const newRandomGraphFetcher: () => GraphFetcher = () => {
-  function generateRandomAddress(): FullAddress {
-    return {
-      id: `${ADDRESS_TYPE},${toRadix252(rand.intBetween(1, 999999999))}` as const,
-      eth: toRadix252(rand.intBetween(0, 1000000000)),
-      t: rand.random() < 0.1 ? 'c' : 'w',
-      ts: toRadix252(new Date().getTime()),
-      c: toRadix252(rand.intBetween(0, new Date().getTime())),
-    }
+export function generateRandomAddress(): FullAddress {
+  return {
+    id: `${ADDRESS_TYPE},${toRadix252(rand.intBetween(1, 999999999))}` as const,
+    eth: toRadix252(rand.intBetween(0, 1000000000)),
+    t: rand.random() < 0.1 ? 'c' : 'w',
+    ts: toRadix252(new Date().getTime()),
+    c: toRadix252(rand.intBetween(0, new Date().getTime())),
   }
+}
 
-  function generateRandomBlock(): FullBlock {
-    const block: FullBlock = {
-      id: `${BLOCK_TYPE},${toRadix252(rand.intBetween(1, 99999999))}` as const,
-      difficulty: rand.floatBetween(1, 10),
-      extraData: rand.intBetween(1, 9999999).toString(),
-      gasLimit: rand.floatBetween(1, 20).toString(),
-      gasUsed: rand.floatBetween(0, 10).toString(),
-      hash: `0x${rand.intBetween(0, 9999999999)}`,
-      miner: `${rand.intBetween(1, 99999999)}` as const,
-      nonce: rand.intBetween(1, 9999999).toString(),
-      number: toRadix252(rand.intBetween(200, 9999)),
-      parentHash: `0x${rand.intBetween(0, 9999999999)}`,
-      ts: toRadix252(rand.intBetween(0, +new Date())),
-      //baseFeePerGas: rand.intBetween(1, 9999).toString(),
-    }
-    return block
+export function generateRandomBlock(): FullBlock {
+  const block: FullBlock = {
+    id: `${BLOCK_TYPE},${toRadix252(rand.intBetween(1, 99999999))}` as const,
+    difficulty: rand.floatBetween(1, 10),
+    extraData: rand.intBetween(1, 9999999).toString(),
+    gasLimit: rand.floatBetween(1, 20).toString(),
+    gasUsed: rand.floatBetween(0, 10).toString(),
+    hash: `0x${rand.intBetween(0, 9999999999)}`,
+    miner: `${rand.intBetween(1, 99999999)}` as const,
+    nonce: rand.intBetween(1, 9999999).toString(),
+    number: toRadix252(rand.intBetween(200, 9999)),
+    parentHash: `0x${rand.intBetween(0, 9999999999)}`,
+    ts: toRadix252(rand.intBetween(0, +new Date())),
+    //baseFeePerGas: rand.intBetween(1, 9999).toString(),
   }
+  return block
+}
 
-  function generateRandomTransaction(): FullTransaction {
-    const t: FullTransaction = {
-      id: `${TRANSACTION_TYPE},${toRadix252(rand.intBetween(1, 99999999))}` as const,
-      blockNumber: toRadix252(rand.intBetween(1, 999999)),
-      eth: toRadix252(rand.intBetween(0, 1000000000)),
-      from: `0x${rand.intBetween(0, 999999999)}`,
-      gasPrice: `${rand.intBetween(0, 2000000)}`,
-      gasLimit: `${rand.intBetween(0, 20)}`,
-      hash: `0x${rand.intBetween(0, 9999999999)}`,
-      //input: `${rand.intBetween(0, 999)}`,
-      nonce: toRadix252(rand.intBetween(0, 999)),
-      to: `0x${rand.intBetween(1, 9999999)}`,
-      status: rand.intBetween(0, 1) as 0 | 1,
-      gasUsed: '1',
-      //transactionIndex: rand.intBetween(0, 20),
-      //maxFeePerGas: `${rand.intBetween(1, 20)}`,
-      //maxPriorityFeePerGas: `${rand.intBetween(0, 20)}`,
-    }
-    return t
+export function generateRandomTransaction(): FullTransaction {
+  const t: FullTransaction = {
+    id: `${TRANSACTION_TYPE},${toRadix252(rand.intBetween(1, 99999999))}` as const,
+    blockNumber: toRadix252(rand.intBetween(1, 999999)),
+    eth: toRadix252(rand.intBetween(0, 1000000000)),
+    from: `0x${rand.intBetween(0, 999999999)}`,
+    gasPrice: `${rand.intBetween(0, 2000000)}`,
+    gasLimit: `${rand.intBetween(0, 20)}`,
+    hash: `0x${rand.intBetween(0, 9999999999)}`,
+    nonce: toRadix252(rand.intBetween(0, 999)),
+    to: `0x${rand.intBetween(1, 9999999)}`,
+    status: rand.intBetween(0, 1) as 0 | 1,
+    gasUsed: '1',
   }
+  return t
+}
 
-  async function* generateRandomNodes<N extends GraphNodes>(
-    count: number,
-    gens: (() => N)[],
-    nodeFreqMap: typeof NODE_FREQUENCY_MAP[number][]
-  ): AsyncGenerator<GraphNodes, undefined, unknown> {
-    for (let i = 0; i < count; i++) {
-      await sleep(rand.intBetween(0, MAX_RANDOM_TIMEOUT))
-      // Flip a coin and return random type
-      const coin = rand.random()
-      let nodeType: NodeType = nodeFreqMap[0][0]
-      let coinSum = 0
-      for (let freq of nodeFreqMap) {
-        nodeType = freq[0]
-        coinSum += freq[1]
-        if (coinSum < coin) {
-          break
-        }
-      }
-      switch (nodeType) {
-        case ADDRESS_TYPE: {
-          yield generateRandomAddress()
-          break
-        }
-        case BLOCK_TYPE: {
-          yield generateRandomBlock()
-          break
-        }
-        case TRANSACTION_TYPE: {
-          yield generateRandomTransaction()
-          break
-        }
-        default: {
-          assertUnreachable(nodeType)
-        }
-      }
-    }
-    return undefined
+export function generateRandomTx(sender: Address['id'], transaction: Transaction['id']): Tx {
+  return {
+    id: `${TX},${sender}-${transaction}` as Tx['id'],
+    val: toRadix252(rand.intBetween(1, 10000000)),
+    ts: generateRandomTs(),
   }
+}
 
-  function generateRandomTx(sender: Address['id'], transaction: Transaction['id']): Tx {
-    return {
-      id: `${TX},${sender}-${transaction}` as Tx['id'],
-      val: toRadix252(rand.intBetween(1, 10000000)),
-      ts: generateRandomTs(),
-    }
+export function generateRandomRx(receiver: Address['id'], transaction: Transaction['id']): Rx {
+  return {
+    id: `${RX},${transaction}-${receiver}` as Rx['id'],
+    val: toRadix252(rand.intBetween(1, 100000000)),
+    ts: generateRandomTs(),
   }
+}
 
-  function generateRandomRx(receiver: Address['id'], transaction: Transaction['id']): Rx {
-    return {
-      id: `${RX},${transaction}-${receiver}` as Rx['id'],
-      val: toRadix252(rand.intBetween(1, 100000000)),
-      ts: generateRandomTs(),
-    }
+export function generateRandomContractCreated(
+  receiver: Address['id'],
+  transaction: Transaction['id']
+): ContractCreated {
+  return {
+    id: `${CONTRACT_CREATED},${transaction}-${receiver}` as ContractCreated['id'],
+    val: toRadix252(rand.intBetween(1, 10000000)),
+    ts: generateRandomTs(),
   }
+}
 
-  function generateRandomContractCreated(
-    receiver: Address['id'],
-    transaction: Transaction['id']
-  ): ContractCreated {
-    return {
-      id: `${CONTRACT_CREATED},${transaction}-${receiver}` as ContractCreated['id'],
-      val: toRadix252(rand.intBetween(1, 10000000)),
-      ts: generateRandomTs(),
-    }
+export function generateRandomTs(): string {
+  return toRadix252(rand.intBetween(0, new Date().getTime()))
+}
+
+export function generateRandomMine(miner: Address['id'], block: Block['id']): Miner {
+  return {
+    id: `${MINER},${miner}-${block}` as Miner['id'],
+    ts: generateRandomTs(),
   }
+}
 
-  function generateRandomTs(): string {
-    return toRadix252(rand.intBetween(0, new Date().getTime()))
+export function generateRandomChildTransaction(
+  transaction: FullTransaction['id'],
+  block: FullBlock['id']
+): ChildTransaction {
+  return {
+    id: `${CHILD_TRANSACTION},${block}-${transaction}` as ChildTransaction['id'],
+    ts: generateRandomTs(),
   }
+}
 
-  function generateRandomMine(miner: Address['id'], block: Block['id']): Miner {
-    return {
-      id: `${MINER},${miner}-${block}` as Miner['id'],
-      ts: generateRandomTs(),
-    }
-  }
+export async function* generateRandomAddressNeighbors(
+  address: Address['id'],
+  count: number
+): AsyncGenerator<AddressRelations, undefined, AddressRelations> {
+  const noAddresses = [[BLOCK_TYPE, 0.05], [TRANSACTION_TYPE, 0.95]] as typeof NODE_FREQUENCY_MAP
+  const neighborGen = generateRandomNodes<FullTransaction | FullBlock>(
+    count,
+    [generateRandomBlock, generateRandomTransaction],
+    noAddresses
+  )
 
-  function generateRandomChildTransaction(
-    transaction: FullTransaction['id'],
-    block: FullBlock['id']
-  ): ChildTransaction {
-    return {
-      id: `${CHILD_TRANSACTION},${block}-${transaction}` as ChildTransaction['id'],
-      ts: generateRandomTs(),
-    }
-  }
+  // For each generated neighbor, create at least 1 relation between the nodes
+  for await (const neighbor of neighborGen) {
+    // yield neighbor;
 
-  async function* generateRandomAddressNeighbors(
-    address: Address['id'],
-    count: number
-  ): AsyncGenerator<AddressRelations, undefined, AddressRelations> {
-    const noAddresses = [[BLOCK_TYPE, 0.05], [TRANSACTION_TYPE, 0.95]] as typeof NODE_FREQUENCY_MAP
-    const neighborGen = generateRandomNodes<FullTransaction | FullBlock>(
-      count,
-      [generateRandomBlock, generateRandomTransaction],
-      noAddresses
-    )
-
-    // For each generated neighbor, create at least 1 relation between the nodes
-    for await (const neighbor of neighborGen) {
-      // yield neighbor;
-
-      // Emit a random relation
-      if (isFullTransaction(neighbor)) {
-        //Flip coin to be Rx or Tx
-        if (rand.random() < 0.5) {
-          // Flip for Rx vs contract
-          yield generateRandomRx(address, neighbor.id)
-        } else {
-          yield generateRandomTx(address, neighbor.id)
-        }
-      } else if (isFullBlock(neighbor)) {
-        yield generateRandomMine(address, neighbor.id)
-      }
-    }
-
-    return undefined
-  }
-
-  async function* generateRandomTransactionNeighbors(
-    trans: FullTransaction,
-    count: number
-  ): AsyncGenerator<TransactionRelations, undefined, TransactionRelations> {
-    const noAddresses = normalize(NODE_FREQUENCY_MAP.filter((n) => n[0] !== TRANSACTION_TYPE))
-    const neighborGen = generateRandomNodes<FullAddress>(
-      count,
-      [generateRandomAddress],
-      noAddresses
-    )
-
-    // For each generated neighbor, create at least 1 relation between the nodes
-    for await (const neighbor of neighborGen) {
-      //yield neighbor;
-
-      // Emit a random relation
-      if (isAddress(neighbor)) {
-        //Flip coin to be Rx or Tx
-        if (rand.random() < 0.5) {
-          // Flip for Rx vs contract
-          if (rand.random() < 0.1) {
-            yield generateRandomContractCreated(neighbor.id, trans.id)
-          } else {
-            yield generateRandomRx(neighbor.id, trans.id)
-          }
-        } else {
-          yield generateRandomTx(neighbor.id, trans.id)
-        }
-      }
-    }
-
-    return undefined
-  }
-
-  async function* generateRandomBlockNeighbors(
-    block: FullBlock,
-    transactionCount: number
-  ): AsyncGenerator<Exclude<BlockRelations, ParentBlock>, undefined, undefined> {
-    // Generate 1 miner
-    const miner = (await generateRandomNodesOfType(1, generateRandomAddress).next())
-      .value as FullAddress
-    //yield miner;
-    // Generate miner relation
-    yield generateRandomMine(miner.id, block.id)
-
-    // For each generated neighbor, create at least 1 relation between the nodes
-    const transactionGen = generateRandomNodes<FullTransaction>(
-      transactionCount,
-      [generateRandomTransaction],
-      [[TRANSACTION_TYPE, 1]]
-    )
-    for await (const childTransaction of transactionGen) {
-      //yield childTransaction;
-
-      // Emit a random relation
-      if (isFullTransaction(childTransaction)) {
-        yield generateRandomChildTransaction(childTransaction.id, block.id)
+    // Emit a random relation
+    if (isFullTransaction(neighbor)) {
+      //Flip coin to be Rx or Tx
+      if (rand.random() < 0.5) {
+        // Flip for Rx vs contract
+        yield generateRandomRx(address, neighbor.id)
       } else {
-        throw new Error('wtfffff')
+        yield generateRandomTx(address, neighbor.id)
+      }
+    } else if (isFullBlock(neighbor)) {
+      yield generateRandomMine(address, neighbor.id)
+    }
+  }
+
+  return undefined
+}
+
+export async function* generateRandomTransactionNeighbors(
+  trans: FullTransaction,
+  count: number
+): AsyncGenerator<TransactionRelations, undefined, TransactionRelations> {
+  const noAddresses = normalize(NODE_FREQUENCY_MAP.filter((n) => n[0] !== TRANSACTION_TYPE))
+  const neighborGen = generateRandomNodes<FullAddress>(
+    count,
+    [generateRandomAddress],
+    noAddresses
+  )
+
+  // For each generated neighbor, create at least 1 relation between the nodes
+  for await (const neighbor of neighborGen) {
+    //yield neighbor;
+
+    // Emit a random relation
+    if (isAddress(neighbor)) {
+      //Flip coin to be Rx or Tx
+      if (rand.random() < 0.5) {
+        // Flip for Rx vs contract
+        if (rand.random() < 0.1) {
+          yield generateRandomContractCreated(neighbor.id, trans.id)
+        } else {
+          yield generateRandomRx(neighbor.id, trans.id)
+        }
+      } else {
+        yield generateRandomTx(neighbor.id, trans.id)
       }
     }
-
-    return undefined
   }
 
-  const knownAddressToRelCount: Record<Address['id'], number> = {}
-  const ensureAddressRelCount = (id: Address['id']) => {
-    if (!knownAddressToRelCount[id]) {
-      knownAddressToRelCount[id] = rand.intBetween(1, 2) * RELATION_PAGE_SIZE
+  return undefined
+}
+
+export async function* generateRandomBlockNeighbors(
+  block: FullBlock,
+  transactionCount: number
+): AsyncGenerator<Exclude<BlockRelations, ParentBlock>, undefined, undefined> {
+  // Generate 1 miner
+  const miner = (await generateRandomNodesOfType(1, generateRandomAddress).next())
+    .value as FullAddress
+  //yield miner;
+  // Generate miner relation
+  yield generateRandomMine(miner.id, block.id)
+
+  // For each generated neighbor, create at least 1 relation between the nodes
+  const transactionGen = generateRandomNodes<FullTransaction>(
+    transactionCount,
+    [generateRandomTransaction],
+    [[TRANSACTION_TYPE, 1]]
+  )
+  for await (const childTransaction of transactionGen) {
+    //yield childTransaction;
+
+    // Emit a random relation
+    if (isFullTransaction(childTransaction)) {
+      yield generateRandomChildTransaction(childTransaction.id, block.id)
+    } else {
+      throw new Error('wtfffff')
     }
   }
+
+  return undefined
+}
+
+async function* generateRandomNodes<N extends GraphNodes>(
+  count: number,
+  gens: (() => N)[],
+  nodeFreqMap: typeof NODE_FREQUENCY_MAP[number][]
+): AsyncGenerator<GraphNodes, undefined, unknown> {
+  for (let i = 0; i < count; i++) {
+    // Flip a coin and return random type
+    const coin = rand.random()
+    let nodeType: NodeType = nodeFreqMap[0][0]
+    let coinSum = 0
+    for (let freq of nodeFreqMap) {
+      nodeType = freq[0]
+      coinSum += freq[1]
+      if (coinSum < coin) {
+        break
+      }
+    }
+    switch (nodeType) {
+      case ADDRESS_TYPE: {
+        yield generateRandomAddress()
+        break
+      }
+      case BLOCK_TYPE: {
+        yield generateRandomBlock()
+        break
+      }
+      case TRANSACTION_TYPE: {
+        yield generateRandomTransaction()
+        break
+      }
+      default: {
+        assertUnreachable(nodeType)
+      }
+    }
+  }
+  return undefined
+}
+
+const knownAddressToRelCount: Record<Address['id'], number> = {}
+const ensureAddressRelCount = (id: Address['id']) => {
+  if (!knownAddressToRelCount[id]) {
+    knownAddressToRelCount[id] = rand.intBetween(1, 2) * RELATION_PAGE_SIZE
+  }
+}
+
+export const newRandomGraphFetcher: () => GraphFetcher = () => {
 
   const fetcher: GraphFetcher = {
     fetchAddressTimeline: async function* (id: Address['id']) {
