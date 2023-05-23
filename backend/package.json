@@ -3,7 +3,6 @@
   "version": "0.1.0",
   "description": "Decentralgraph backend services",
   "scripts": {
-    "core": "NODE_ENV=prod forever start -v -c ts-node src/run-core-init.ts",
     "connect": "NODE_ENV=prod ts-node src/connect.ts",
     "hax:prod": "NODE_ENV=prod node --expose-gc -r ts-node/register src/run-core-hax.ts",
     "bridge:prod": "NODE_ENV=prod node -r ts-node/register src/run-bridge.ts",

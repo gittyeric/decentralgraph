@@ -14,4 +14,8 @@ COPY . .
 WORKDIR backend
 
 RUN npm run build
-CMD npm run edge:prod
+
+ENV NODE_ENV=dev
+
+# SERVICE can be "core" or "bridge"
+CMD npm run "$SERVICE:$NODE_ENV"
