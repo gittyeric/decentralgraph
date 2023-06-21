@@ -106,7 +106,7 @@ async function writeAddrRels(addrs: FullAddress[],
   timeSums.write += +new Date() - s
 }
 
-// Update all LMDB-related state starting from block number
+// Update all Core LMDB-related state starting from block number
 export async function mainIndexingLoop(
   earliestBlockNumber: number,
   updateChainState: boolean,

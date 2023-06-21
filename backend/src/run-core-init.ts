@@ -1,7 +1,6 @@
 import { isShuttingDown, setShutdownGraceMs, shutdownGracefully } from './server/server-utils';
 import { getChainState } from './server/graph/fetch-core';
 import { instrumentDebug, sleep } from '../../frontend/src/features/graph/global/utils'
-import { startFetchingTimelineAggs } from './server/graph/state/core-aggs';
 import { mainIndexingLoop } from './server/graph/state/core-init';
 import { scanForEns } from './server/graph/state/scanner-ens';
 import { chainStateDb } from './server/lmdb';

@@ -14,12 +14,12 @@
 
 # Connections: erigon -> (sentries, downloader), rpcdaemon -> (erigon, txpool), txpool -> erigon
 
-version: '2.2'
+version: '3.8'
 
 # Basic erigon's service
 x-erigon-service:
   &default-erigon-service
-  image: thorax/erigon:${TAG:-2.42.0}
+  image: thorax/erigon:$ERIGON_TAG
   pid: service:erigon # Use erigon's PID namespace. It's required to open Erigon's DB from another process (RPCDaemon local-mode)
   volumes_from: [ erigon ]
   restart: unless-stopped
@@ -27,84 +27,74 @@ x-erigon-service:
   user: ${DOCKER_UID:-1000}:${DOCKER_GID:-1000}
 
 services:
-
-  frontend:
-    network_mode: "host"
-    image: dg-frontend
-    build:
-      dockerfile: ./frontend.Dockerfile
-    restart: unless-stopped
-    ports:
-      - 8080:8080/tcp
-    profiles:
-      - donotstart
-
-  core:
-    network_mode: "host"
-    image: dg-backend
-    environment:
-      - SERVICE=core
-    build:
-      dockerfile: ./backend.Dockerfile
-    restart: unless-stopped
-    mem_swappiness: 0
-
-  bridge:
-    network_mode: "host"
-    image: dg-backend
-    environment:
-      - SERVICE=bridge
-    build:
-      dockerfile: ./backend.Dockerfile
-    restart: unless-stopped
-
-  # Edge caching service is disabled by default
-  edge:
-    network_mode: "host"
-    image: dg-backend
-    environment:
-      - SERVICE=edge
-    build:
-      dockerfile: ./backend.Dockerfile
-    restart: unless-stopped
-    profiles:
-      - donotstart
+  # ------------ General Services ------------------
 
   lighthouse:
+    &lighthouse
     network_mode: "host"
-    image: sigp/lighthouse:v4.1.0
+    image: sigp/lighthouse:$LIGHTHOUSE_TAG
     volumes:
-      - ${XDG_DATA_HOME}/lighthouse:/root/.lighthouse
-      - ${XDG_DATA_HOME}/lighthouse:/home/lighthouse/.local/share/lighthouse
-      - type: bind
-        source: ${EXEC_TOKEN_DIR}
-        target: /opt
-        read_only: true
+      - ${LIGHTHOUSE_DATA_HOME}:/root/.lighthouse
+      - ${LIGHTHOUSE_DATA_HOME}:/home/lighthouse/.local/share/lighthouse
     ports:
       - 5052:5052/tcp
       - 5053:5053/tcp
       - 5054:5054/tcp # metrics endpoint
       - 9000:9000/tcp
       - 9000:9000/udp
-    env_file: .env
-    command: lighthouse --network $NETWORK beacon_node --http --http-address 0.0.0.0 --execution-endpoint http://0.0.0.0:8551 --execution-jwt /opt/jwt.hex
+    environment:
+      - NETWORK=none
+    env_file:
+      - .env
+    command: lighthouse --network $$NETWORK beacon_node --execution-endpoint http://0.0.0.0:8551 --execution-jwt /opt/jwt.hex
     restart: unless-stopped
+    mem_swappiness: 0
+    profiles:
+      - none
 
   erigon:
+    &erigon
     network_mode: "host"
-    image: thorax/erigon:${TAG:-latest}
-    env_file: .env
-    build:
-      args:
-        UID: ${DOCKER_UID:-1000}
-        GID: ${DOCKER_GID:-1000}
-        NETWORK: ${NETWORK:-goerli}
-      context: .
-    command: ${ERIGON_FLAGS-} --private.api.addr=0.0.0.0:9090 --chain=${NETWORK} --torrent.download.rate=20mb --authrpc.addr 0.0.0.0 --authrpc.vhosts 0.0.0.0 --http.addr=0.0.0.0 --http.vhosts=* --http.corsdomain=* --ws --private.api.addr=0.0.0.0:9090 --txpool.api.addr=txpool:9094 --sentry.api.addr=0.0.0.0:9091 --downloader.api.addr=0.0.0.0:9093 --metrics --metrics.addr=0.0.0.0 --metrics.port=6060 --pprof --pprof.addr=0.0.0.0 --pprof.port=6061 --authrpc.jwtsecret=/home/erigon/.local/share/erigon/jwt.hex --datadir=/home/erigon/.local/share/erigon
+    image: thorax/erigon:$ERIGON_TAG
+    pid: service:erigon
+    environment:
+      - NETWORK=goerli
+    #build:
+    #  args:
+    #    UID: ${DOCKER_UID:-1000}
+    #    GID: ${DOCKER_GID:-1000}
+    #  context: .
+    command:
+      [
+        "--chain=goerli", # TODO: fix!!!!
+        '--torrent.download.rate=20mb',
+        '--authrpc.addr=0.0.0.0',
+        '--authrpc.vhosts=0.0.0.0',
+        '--http.addr=0.0.0.0',
+        '--http.vhosts=*',
+        '--http.corsdomain=*',
+        '--ws',
+        '--private.api.addr=0.0.0.0:9090',
+        '--txpool.api.addr=txpool:9094',
+        '--sentry.api.addr=0.0.0.0:9091',
+        '--downloader.api.addr=0.0.0.0:9093',
+        #'--metrics',
+      #'--metrics.addr=0.0.0.0',
+      #'--metrics.port=6060',
+        '--pprof',
+        '--pprof.addr=0.0.0.0',
+        '--pprof.port=6061',
+        '--authrpc.jwtsecret=/home/erigon/.local/share/erigon/jwt.hex',
+        '--datadir=/home/erigon/.local/share/erigon'
+      ]
     ports:
       [
         "8551:8551",
         "8545:8545",
+        "9090:9090",
+        "9091:9091",
+        "9093:9093",
+        "9094:9094",
         "30303:30303/tcp",
         "30303:30303/udp",
         "42069:42069/tcp",
@@ -112,10 +102,129 @@ services:
       ]
     volumes:
       # It's ok to mount sub-dirs of "datadir" to different drives
-      - ${XDG_DATA_HOME}/erigon:/home/erigon/.local/share/erigon
+      - ${ERIGON_DATA_HOME}:/home/erigon/.local/share/erigon
       #- type: bind
       #  source: ${EXEC_TOKEN_DIR}
       #  target: /home/erigon/.local/share/erigon
       #  read_only: true
     restart: unless-stopped
     mem_swappiness: 0
+    profiles:
+      - none
+
+  core:
+    &core
+    network_mode: "host"
+    image: dg-backend
+    volumes:
+      - ${CORE_DATA_HOME}:/home/core
+    environment:
+      - SERVICE=core
+      - NETWORK=none
+    build:
+      dockerfile: backend.Dockerfile
+    restart: unless-stopped
+    mem_swappiness: 0
+    profiles:
+      - none
+
+  bridge:
+    depends_on:
+      - core
+    network_mode: "host"
+    image: dg-backend
+    environment:
+      - SERVICE=bridge
+    build:
+      dockerfile: backend.Dockerfile
+    ports: [ "${BRIDGE_PORT}:80" ]
+    restart: unless-stopped
+    profiles:
+      - webapp
+
+  frontend:
+    depends_on:
+      - bridge
+    network_mode: "host"
+    image: dg-frontend
+    build:
+      dockerfile: frontend.Dockerfile
+    restart: unless-stopped
+    ports:
+      - ${FRONTEND_PORT}:8080/tcp
+    profiles:
+      - goerli0
+      - mainnet
+
+  # Edge caching service is disabled by default
+  edge:
+    network_mode: "host"
+    image: dg-backend
+    build:
+      dockerfile: frontend.Dockerfile
+    environment:
+      - SERVICE=edge
+    restart: unless-stopped
+    ports: [ "${EDGE_PORT}:80" ]
+    profiles:
+      - edge
+
+  #-------------- Services by chain
+
+  # Goerli
+
+  core-goerli:
+    depends_on:
+      - lighthouse-goerli
+      - erigon-goerli
+    <<: *core
+    environment:
+      - NETWORK=goerli
+    profiles:
+      - goerli0
+
+  erigon-goerli:
+    <<: *erigon
+    environment:
+      - NETWORK=goerli
+    profiles:
+      - goerli
+      - test
+
+  lighthouse-goerli:
+    <<: *lighthouse
+    depends_on:
+      - erigon-goerli
+    environment:
+      - NETWORK=goerli
+    profiles:
+      - goerli0
+      - test
+
+  # Mainnet
+
+  core-mainnet:
+    <<: *core
+    depends_on:
+      - lighthouse-mainnet
+      - erigon-mainnet
+    environment:
+      - NETWORK=mainnet
+    profiles:
+      - mainnet
+
+  erigon-mainnet:
+    <<: *erigon
+    environment:
+      - NETWORK=mainnet
+    profiles:
+      - mainnet
+
+  lighthouse-mainnet:
+    <<: *lighthouse
+    depends_on:
+      - erigon-mainnet
+    environment:
+      - NETWORK=mainnet
+    profiles:
+      - mainnet
